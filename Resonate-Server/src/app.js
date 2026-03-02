@@ -58,10 +58,16 @@ app.use((req, res, next) => {
 // Gzip compression — reduces JSON payload sizes by 60-80%
 app.use(compression());
 
-app.use(cors({
+const corsOptions = {
   origin: [process.env.CLIENT_URL_1, process.env.CLIENT_URL_2],
-  credentials: true
-}));
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
+};
+
+// Handle CORS preflight (OPTIONS) for ALL routes — required for Vercel → Railway
+app.options("*", cors(corsOptions));
+app.use(cors(corsOptions));
 
 app.use(express.json({ limit: '2mb' }));
 
