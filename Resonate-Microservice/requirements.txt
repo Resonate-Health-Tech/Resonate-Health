@@ -1,0 +1,17 @@
+fastapi
+uvicorn[standard]
+gunicorn
+python-multipart
+httpx
+tenacity
+Pillow
+google-generativeai
+PyMuPDF
+python-dotenv
+openai
+slowapi
+
+# Testing
+pytest
+pytest-asyncio
+pytest-cov

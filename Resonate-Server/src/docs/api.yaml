@@ -1,0 +1,418 @@
+# Resonate API - Auth & User Endpoints
+
+paths:
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a new user
+      description: Creates a new user account with Firebase authentication
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "John Doe"
+                gender:
+                  type: string
+                  enum: [male, female, other]
+                dateOfBirth:
+                  type: string
+                  format: date
+                heightCm:
+                  type: number
+                  example: 175
+                weightKg:
+                  type: number
+                  example: 70
+                dietType:
+                  type: string
+                  enum: [vegetarian, eggetarian, non_vegetarian]
+                goals:
+                  type: string
+                  example: "Lose 5kg"
+      responses:
+        '200':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User Registered"
+        '400':
+          description: User already registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /user/profile:
+    get:
+      tags: [User]
+      summary: Get user profile
+      description: Returns the authenticated user's profile data
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized
+
+    put:
+      tags: [User]
+      summary: Update user profile
+      description: Updates the authenticated user's profile
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                heightCm:
+                  type: number
+                weightKg:
+                  type: number
+                dietType:
+                  type: string
+                goals:
+                  type: string
+      responses:
+        '200':
+          description: Profile updated successfully
+
+  /workout/generate:
+    post:
+      tags: [Workout]
+      summary: Generate a personalized workout plan
+      description: Uses AI to generate a workout plan based on user preferences and fitness level
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [fitnessLevel, timeAvailable]
+              properties:
+                fitnessLevel:
+                  type: string
+                  enum: [beginner, intermediate, advanced]
+                  example: "intermediate"
+                equipment:
+                  type: array
+                  items:
+                    type: string
+                  example: ["dumbbells", "resistance bands"]
+                timeAvailable:
+                  type: integer
+                  minimum: 10
+                  maximum: 180
+                  example: 45
+                injuries:
+                  type: array
+                  items:
+                    type: string
+                  example: []
+                motivationLevel:
+                  type: string
+                  enum: [low, medium, high]
+                workoutTiming:
+                  type: string
+                  enum: [morning, afternoon, evening]
+      responses:
+        '200':
+          description: Generated workout plan
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  plan:
+                    $ref: '#/components/schemas/WorkoutPlan'
+        '400':
+          description: Validation error
+        '500':
+          description: AI generation failed
+
+  /workout/today:
+    get:
+      tags: [Workout]
+      summary: Get today's workout plan
+      description: Returns the workout plan for today if one exists
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Today's workout plan or no_plan status
+
+  /workout/complete:
+    post:
+      tags: [Workout]
+      summary: Mark workout as complete
+      description: Records workout completion with optional feedback
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [workoutId]
+              properties:
+                workoutId:
+                  type: string
+                rpe:
+                  type: integer
+                  minimum: 1
+                  maximum: 10
+                  description: Rate of Perceived Exertion
+                energyLevel:
+                  type: string
+                  enum: [low, medium, high]
+                notes:
+                  type: string
+      responses:
+        '200':
+          description: Workout marked as complete
+
+  /nutrition/daily-suggestions:
+    get:
+      tags: [Nutrition]
+      summary: Get today's meal plan
+      description: Returns the meal plan for today if one exists
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Today's meal plan or no_plan status
+
+    post:
+      tags: [Nutrition]
+      summary: Generate a meal plan
+      description: Uses AI to generate a personalized meal plan
+      security:
+        - cookieAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cuisine:
+                  type: string
+                  example: "Indian"
+      responses:
+        '200':
+          description: Generated meal plan
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  plan:
+                    $ref: '#/components/schemas/MealPlan'
+
+  /nutrition/history:
+    get:
+      tags: [Nutrition]
+      summary: Get meal plan history
+      description: Returns historical meal plans
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 30
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: List of past meal plans
+
+  /food/analyze:
+    post:
+      tags: [Food]
+      summary: Analyze food image
+      description: Uses AI to analyze a food image and estimate nutritional content
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                image:
+                  type: string
+                  format: binary
+                cuisine:
+                  type: string
+                  example: "Indian"
+      responses:
+        '200':
+          description: Food analysis result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  food:
+                    type: string
+                  calories:
+                    type: integer
+                  protein:
+                    type: string
+                  carbs:
+                    type: string
+                  fats:
+                    type: string
+
+  /water/log:
+    post:
+      tags: [Water]
+      summary: Log water intake
+      description: Records water consumption
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [amountMl]
+              properties:
+                amountMl:
+                  type: integer
+                  example: 250
+      responses:
+        '200':
+          description: Water logged successfully
+
+    get:
+      tags: [Water]
+      summary: Get today's water intake
+      description: Returns water consumption for today
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Today's water intake
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WaterLog'
+
+  /diagnostics/biomarkers:
+    get:
+      tags: [Diagnostics]
+      summary: Get user biomarkers
+      description: Returns uploaded biomarker data
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: User biomarkers
+
+  /diagnostics/upload:
+    post:
+      tags: [Diagnostics]
+      summary: Upload biomarker report
+      description: Upload a PDF or image of lab results for analysis
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Biomarkers extracted and saved
+
+  /fit/google/auth:
+    get:
+      tags: [Fitness Connect]
+      summary: Initiate Google Fit OAuth
+      description: Redirects to Google OAuth for Fit API access
+      responses:
+        '302':
+          description: Redirect to Google OAuth
+
+  /fit/google/callback:
+    get:
+      tags: [Fitness Connect]
+      summary: Google Fit OAuth callback
+      description: Handles OAuth callback and stores tokens
+      parameters:
+        - in: query
+          name: code
+          schema:
+            type: string
+      responses:
+        '302':
+          description: Redirect to app after successful connection
+
+  /api/admin/memory/stats:
+    get:
+      tags: [Admin]
+      summary: Get memory layer statistics
+      description: Returns Mem0 memory system statistics
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Memory statistics
+
+  /health:
+    get:
+      tags: [Health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        '200':
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ok"

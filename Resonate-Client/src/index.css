@@ -1,0 +1,294 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Serif+Display:ital@0;1&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background:   #F8F8F6;
+    --foreground:   #1A1A18;
+    --card:         #FFFFFF;
+    --primary:      #1A1A18;
+    --primary-fg:   #FFFFFF;
+    --secondary:    #7C6FCD;
+    --accent:       #CADB00;
+    --accent-fg:    #1A1A18;
+    --muted:        rgba(26,26,24,0.35);
+    --muted-fg:     rgba(26,26,24,0.55);
+    --border:       rgba(0,0,0,0.055);
+    --ring:         #CADB00;
+    --destructive:  #EF4444;
+  }
+
+  body {
+    font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+    background: linear-gradient(135deg, #EEF5E0 0%, #EAF0F8 45%, #F3EEF5 100%);
+    min-height: 100vh;
+    color: #1A1A18;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+}
+
+@layer components {
+  /* ── Glass Cards (spec §2.6) ── */
+  .glass-card {
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.60);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05), 0 8px 24px rgba(0,0,0,0.05);
+  }
+
+  .glass-card-strong {
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.70);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05), 0 8px 24px rgba(0,0,0,0.05);
+  }
+
+  /* ── Named Card Variants ── */
+  .card-light {
+    background-color: #FFFFFF;
+    border: 1px solid rgba(0,0,0,0.055);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.05);
+    border-radius: 24px;
+  }
+
+  .card-hero {
+    background: linear-gradient(135deg, #1A1A18 0%, #252522 100%);
+    border-radius: 28px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.18), 0 1px 4px rgba(0,0,0,0.12);
+  }
+
+  /* ── Typography Utilities ── */
+  .font-serif-display {
+    font-family: 'DM Serif Display', serif;
+    font-weight: 400;
+  }
+
+  .text-accent-on-lime  { color: #2D3000; }
+  .text-primary-dark    { color: rgba(255,255,253,0.95); }
+  .text-secondary-dark  { color: rgba(255,255,253,0.55); }
+  .text-muted-dark      { color: rgba(255,255,253,0.30); }
+  .text-muted-body      { color: rgba(26,26,24,0.55); }
+  .text-muted-light     { color: rgba(26,26,24,0.40); }
+
+  /* ── Overline Label ── */
+  .overline-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-weight: 600;
+    color: rgba(26,26,24,0.35);
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  /* ── Lime Pill Badge ── */
+  .badge-lime {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 14px;
+    border-radius: 9999px;
+    font-size: 12px;
+    font-weight: 600;
+    background: rgba(202,219,0,0.10);
+    border: 1px solid rgba(202,219,0,0.22);
+    color: #3D4000;
+  }
+
+  .badge-amber {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 9999px;
+    font-size: 12px;
+    font-weight: 600;
+    background: rgba(245,165,36,0.12);
+    border: 1px solid rgba(245,165,36,0.25);
+    color: #92400E;
+  }
+
+  .badge-green {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 9999px;
+    font-size: 12px;
+    font-weight: 600;
+    background: rgba(52,199,89,0.10);
+    border: 1px solid rgba(52,199,89,0.20);
+    color: #14532D;
+  }
+
+  .badge-neutral {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 9999px;
+    font-size: 11px;
+    font-weight: 500;
+    background: rgba(26,26,24,0.05);
+    color: rgba(26,26,24,0.45);
+  }
+
+  /* ── Progress Bar ── */
+  .progress-track {
+    height: 8px;
+    border-radius: 9999px;
+    background: rgba(26,26,24,0.06);
+    overflow: hidden;
+  }
+
+  .progress-fill-lime   { background: #CADB00; }
+  .progress-fill-purple { background: #7C6FCD; }
+  .progress-fill-lavender{ background: #A195F9; }
+
+  /* ── Sidebar specific ── */
+  .sidebar-glass {
+    background: rgba(255, 255, 255, 0.80);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-right: 1px solid rgba(0, 0, 0, 0.08);
+  }
+
+  /* ── Topbar specific ── */
+  .topbar-glass {
+    background: rgba(255, 255, 255, 0.70);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  }
+
+  /* ── Gradient backgrounds ── */
+  .bg-app-gradient {
+    background: linear-gradient(135deg, #EEF5E0 0%, #EAF0F8 45%, #F3EEF5 100%);
+    min-height: 100vh;
+  }
+
+  /* ── Left-border insight block ── */
+  .insight-block-lime {
+    background: rgba(26,26,24,0.04);
+    border-left: 3px solid #CADB00;
+    border-radius: 0 8px 8px 0;
+    padding: 10px 14px;
+  }
+
+  .insight-block-purple {
+    background: rgba(26,26,24,0.04);
+    border-left: 3px solid #7C6FCD;
+    border-radius: 0 8px 8px 0;
+    padding: 10px 14px;
+  }
+
+  /* ── CTA Link ── */
+  .cta-link {
+    font-size: 12px;
+    font-weight: 600;
+    color: #CADB00;
+    transition: opacity 0.15s;
+    text-decoration: none;
+  }
+  .cta-link:hover { opacity: 0.70; }
+
+  /* ── Custom Scrollbar ── */
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(202,219,0,0.30) rgba(26,26,24,0.05);
+  }
+  .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+  .custom-scrollbar::-webkit-scrollbar-track { background: rgba(26,26,24,0.04); border-radius: 10px; }
+  .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(202,219,0,0.30); border-radius: 10px; }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(202,219,0,0.50); }
+
+  /* ── Filter Button States ── */
+  .filter-btn-active {
+    background: #CADB00;
+    color: #1A1A18;
+    font-weight: 600;
+    font-size: 12px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .filter-btn-inactive {
+    background: rgba(26,26,24,0.05);
+    color: rgba(26,26,24,0.50);
+    font-weight: 600;
+    font-size: 12px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .filter-btn-inactive:hover {
+    background: rgba(26,26,24,0.08);
+    color: rgba(26,26,24,0.70);
+  }
+}
+
+@layer utilities {
+  /* ── Shimmer Animation ── */
+  .shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+  .shimmer::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+    animation: shimmer 2s infinite;
+  }
+
+  /* ── Float ── */
+  .float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  /* ── Pulse Lime Glow ── */
+  .pulse-lime {
+    animation: pulse-lime 2s ease-in-out infinite;
+  }
+}
+
+/* ── Keyframes ── */
+@keyframes shimmer {
+  0%   { left: -100%; }
+  100% { left:  100%; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-6px); }
+}
+
+@keyframes pulse-lime {
+  0%, 100% { box-shadow: 0 0 16px rgba(202,219,0,0.30), 0 0 32px rgba(202,219,0,0.10); }
+  50%       { box-shadow: 0 0 24px rgba(202,219,0,0.50), 0 0 48px rgba(202,219,0,0.20); }
+}
+
+/* ── Reduced Motion ── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
