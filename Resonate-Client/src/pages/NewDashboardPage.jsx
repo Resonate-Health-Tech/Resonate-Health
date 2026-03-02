@@ -505,12 +505,12 @@ export default function NewDashboardPage() {
                                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
                                     <span style={{ fontSize: 12, color: "rgba(26,26,24,0.55)" }}>Sleep Quality</span>
                                     <span style={{ fontSize: 12, fontWeight: 600, color: "#1A1A18" }}>
-                                        {loading ? "—" : fitness?.sleepQualityPct !== null ? `${fitness.sleepQualityPct}%` : "—"}
+                                        {loading ? "—" : (fitness?.sleepQualityPct != null ? `${fitness.sleepQualityPct}%` : "—")}
                                     </span>
                                 </div>
                                 <div className="progress-track">
                                     <div className="progress-fill-purple" style={{
-                                        width: fitness?.sleepQualityPct ? `${fitness.sleepQualityPct}%` : "0%",
+                                        width: fitness?.sleepQualityPct != null ? `${fitness.sleepQualityPct}%` : "0%",
                                         height: "100%", borderRadius: 9999, transition: "width 0.8s ease-out"
                                     }} />
                                 </div>
@@ -520,12 +520,12 @@ export default function NewDashboardPage() {
                                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
                                     <span style={{ fontSize: 12, color: "rgba(26,26,24,0.55)" }}>Deep Sleep</span>
                                     <span style={{ fontSize: 12, fontWeight: 600, color: "#1A1A18" }}>
-                                        {loading ? "—" : fitness?.deepSleepPct !== null ? `${fitness.deepSleepPct}%` : "—"}
+                                        {loading ? "—" : (fitness?.deepSleepPct != null ? `${fitness.deepSleepPct}%` : "—")}
                                     </span>
                                 </div>
                                 <div className="progress-track">
                                     <div className="progress-fill-lavender" style={{
-                                        width: fitness?.deepSleepPct ? `${fitness.deepSleepPct}%` : "0%",
+                                        width: fitness?.deepSleepPct != null ? `${fitness.deepSleepPct}%` : "0%",
                                         height: "100%", borderRadius: 9999
                                     }} />
                                 </div>

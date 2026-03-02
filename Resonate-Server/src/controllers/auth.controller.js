@@ -9,7 +9,12 @@ const generateToken = (userId) => {
 };
 
 const setAuthCookie = (res, token) => {
-  const isProd = process.env.NODE_ENV === "production";
+  // Use cross-origin-safe cookie settings when deployed (Vercel → Railway).
+  // Checks both NODE_ENV and an explicit COOKIE_SECURE flag so Railway deployments
+  // work correctly even when NODE_ENV is not explicitly set to "production".
+  const isProd =
+    process.env.NODE_ENV === "production" ||
+    process.env.COOKIE_SECURE === "true";
 
   res.cookie("authToken", token, {
     httpOnly: true,
