@@ -66,7 +66,7 @@ const corsOptions = {
 };
 
 // Handle CORS preflight (OPTIONS) for ALL routes — required for Vercel → Railway
-app.options("*", cors(corsOptions));
+app.options(/.*/, cors(corsOptions));
 app.use(cors(corsOptions));
 
 app.use(express.json({ limit: '2mb' }));
