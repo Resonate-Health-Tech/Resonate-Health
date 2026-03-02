@@ -36,15 +36,23 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# Allow the Node server (server-to-server) and browser (dev) to reach this service
+# Allow the Node server (server-to-server) and browser to reach this service
+_allowed_origins = [
+    "http://localhost:5173",
+    "http://localhost:8081",
+    "http://localhost:5000",
+    "http://127.0.0.1:5000",
+]
+
+# Inject production URLs from env vars (set these in Railway Variables)
+if os.environ.get("CLIENT_URL"):
+    _allowed_origins.append(os.environ["CLIENT_URL"])
+if os.environ.get("SERVER_URL"):
+    _allowed_origins.append(os.environ["SERVER_URL"])
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://localhost:8081",
-        "http://localhost:5000",
-        "http://127.0.0.1:5000",
-    ],
+    allow_origins=_allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
