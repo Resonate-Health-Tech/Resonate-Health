@@ -59,7 +59,7 @@ app.use((req, res, next) => {
 app.use(compression());
 
 const corsOptions = {
-  origin: [process.env.CLIENT_URL_1, process.env.CLIENT_URL_2],
+  origin: [process.env.CLIENT_URL_1, process.env.CLIENT_URL_2].filter(Boolean),
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
