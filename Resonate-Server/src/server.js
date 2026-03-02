@@ -7,9 +7,13 @@ import { startFitnessSync } from "./cron/fitnessSync.js";
 
 const PORT = process.env.PORT || 3000;
 
-// Use all CPU cores in production; single process in dev
+// Railway sets WEB_CONCURRENCY automatically based on container RAM.
+// Never use os.cpus().length — it reports the host's cores (e.g. 48),
+// not your container's allocation, causing catastrophic OOM kills.
 const NUM_WORKERS =
-    process.env.NODE_ENV === "production" ? os.cpus().length : 1;
+    process.env.NODE_ENV === "production"
+        ? Math.min(parseInt(process.env.WEB_CONCURRENCY || "1", 10), 2)
+        : 1;
 
 if (cluster.isPrimary && NUM_WORKERS > 1) {
     console.log(
