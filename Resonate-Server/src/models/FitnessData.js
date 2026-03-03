@@ -23,6 +23,26 @@ const sleepSchema = new mongoose.Schema(
     sleepHours: {
       type: Number,
       default: 0
+    },
+    deepSleepMinutes: {
+      type: Number,
+      default: null
+    },
+    remSleepMinutes: {
+      type: Number,
+      default: null
+    },
+    lightSleepMinutes: {
+      type: Number,
+      default: null
+    },
+    restingHeartRate: {
+      type: Number,
+      default: null
+    },
+    hrv: {
+      type: Number,
+      default: null
     }
   },
   { _id: false }

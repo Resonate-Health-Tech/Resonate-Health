@@ -1,39 +1,96 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
-import { suggestInterventions } from "../api";
+import { getDailyInsights, refreshInsights } from "../api";
 
 export default function InsightsPage() {
     const [insights, setInsights] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState(null);
+    const [generatedAt, setGeneratedAt] = useState(null);
+    const [cacheHit, setCacheHit] = useState(null);
+
+    const fetchInsights = async () => {
+        setError(null);
+        setLoading(true);
+        try {
+            const data = await getDailyInsights();
+            setInsights(data.data || []);
+            setGeneratedAt(data.generated_at || null);
+            setCacheHit(data.cache_hit ?? null);
+        } catch (err) {
+            console.error("Failed to fetch insights:", err);
+            setError("Failed to load insights. Please try again later.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleRefresh = async () => {
+        setRefreshing(true);
+        setError(null);
+        try {
+            const data = await refreshInsights();
+            setInsights(data.data || []);
+            setGeneratedAt(data.generated_at || null);
+            setCacheHit(false);
+        } catch (err) {
+            console.error("Failed to refresh insights:", err);
+            setError("Failed to refresh insights. Please try again.");
+        } finally {
+            setRefreshing(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchInsights = async () => {
-            try {
-                const data = await suggestInterventions();
-                setInsights(data.suggestions || []);
-            } catch (err) {
-                console.error("Failed to fetch insights:", err);
-                setError("Failed to load insights. Please try again later.");
-            } finally {
-                setLoading(false);
-            }
-        };
-
         fetchInsights();
     }, []);
 
     return (
         <div>
             {/* Header */}
-            <div className="mb-6">
-                <h1 style={{ fontSize: 30, fontWeight: 700, color: "#1A1A18", fontFamily: "'DM Sans', sans-serif", marginBottom: 4 }}>
-                    Insights
-                </h1>
-                <p style={{ fontSize: 14, color: "rgba(26,26,24,0.55)" }}>
-                    Data-driven health recommendations, powered by your data.
-                </p>
+            <div className="mb-6" style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+                <div>
+                    <h1 style={{ fontSize: 30, fontWeight: 700, color: "#1A1A18", fontFamily: "'DM Sans', sans-serif", marginBottom: 4 }}>
+                        Insights
+                    </h1>
+                    <p style={{ fontSize: 14, color: "rgba(26,26,24,0.55)" }}>
+                        Data-driven health recommendations, powered by your data.
+                    </p>
+                    {generatedAt && (
+                        <p style={{ fontSize: 11, color: "rgba(26,26,24,0.35)", marginTop: 4 }}>
+                            {cacheHit ? "Cached" : "Generated"} · {new Date(generatedAt).toLocaleString()}
+                        </p>
+                    )}
+                </div>
+                <button
+                    onClick={handleRefresh}
+                    disabled={refreshing || loading}
+                    style={{
+                        display: "flex", alignItems: "center", gap: 6,
+                        padding: "8px 16px",
+                        background: refreshing ? "rgba(202,219,0,0.4)" : "#CADB00",
+                        border: "none", borderRadius: 20,
+                        fontSize: 13, fontWeight: 600, color: "#1A1A18",
+                        cursor: refreshing ? "not-allowed" : "pointer",
+                        transition: "background 0.2s",
+                        opacity: loading ? 0.5 : 1,
+                        flexShrink: 0,
+                    }}
+                >
+                    <svg
+                        width="13" height="13" viewBox="0 0 24 24" fill="none"
+                        stroke="#1A1A18" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"
+                        style={{ animation: refreshing ? "spin 1s linear infinite" : "none" }}
+                    >
+                        <polyline points="23 4 23 10 17 10" />
+                        <polyline points="1 20 1 14 7 14" />
+                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+                    </svg>
+                    {refreshing ? "Refreshing..." : "Refresh Insights"}
+                </button>
             </div>
+
+            <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
 
             {/* Content */}
             {loading ? (
@@ -44,7 +101,7 @@ export default function InsightsPage() {
                 <div className="flex justify-center flex-col items-center p-10">
                     <p className="text-red-500 mb-4" style={{ fontSize: 14 }}>{error}</p>
                     <button
-                        onClick={() => window.location.reload()}
+                        onClick={fetchInsights}
                         className="px-4 py-2 bg-[#CADB00] rounded-full text-sm font-semibold hover:bg-[#b5c400] transition-colors"
                         style={{ color: "#1A1A18" }}
                     >
@@ -98,9 +155,7 @@ export default function InsightsPage() {
             )}
 
             {/* Coming soon notice */}
-            <div
-                className="glass-card rounded-[20px] p-6 mt-5 text-center"
-            >
+            <div className="glass-card rounded-[20px] p-6 mt-5 text-center">
                 <div
                     style={{
                         width: 48, height: 48, borderRadius: "50%",

@@ -63,6 +63,7 @@ function WithLayout({ children }) {
 
 function AppWrapper() {
   const [user, setUser] = useState(null);
+  const [profile, setProfile] = useState(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
   const navigate = useNavigate();
 
@@ -79,6 +80,20 @@ function AppWrapper() {
     const unsub = onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser);
       setLoadingAuth(false);
+      if (firebaseUser) {
+        // Seed profile immediately from Firebase so name shows before backend responds
+        if (firebaseUser.displayName) {
+          setProfile(prev => prev || { name: firebaseUser.displayName });
+        }
+        // Fetch backend profile to get full data (name, dob, etc.)
+        const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+        fetch(`${BASE_URL}/api/user/profile`, { credentials: "include" })
+          .then((res) => res.ok ? res.json() : null)
+          .then((data) => { if (data?.user) setProfile(data.user); })
+          .catch(() => { });
+      } else {
+        setProfile(null);
+      }
     });
     return () => unsub();
   }, []);
@@ -86,7 +101,7 @@ function AppWrapper() {
   if (loadingAuth) return null;
 
   return (
-    <AuthContext.Provider value={{ user }}>
+    <AuthContext.Provider value={{ user, profile }}>
       <Suspense fallback={<PageLoader />}>
         <Routes>
           {/* ── Public & Auth pages (no sidebar) ── */}

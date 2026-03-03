@@ -1,11 +1,12 @@
-import React, { useContext, useState, useEffect } from "react";
+import React, { useContext, useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { AuthContext } from "../App";
 import {
     Heart, Activity, Moon, Zap, ArrowUpRight, Star,
-    Clock, TrendingUp, AlertTriangle, Wifi, WifiOff
+    Clock, TrendingUp, AlertTriangle, Wifi, WifiOff,
+    CheckCircle, PenLine
 } from "lucide-react";
-import { getWithCookie } from "../api";
+import { getWithCookie, postWithCookie } from "../api";
 import { normalizeFitnessData } from "../utils/fitnessNormalizer";
 
 // ─── STYLE CONSTANTS ──────────────────────────────────────────────────────────
@@ -246,6 +247,161 @@ function TrainingDonut({ aerobic = 0, anaerobic = 0, rest = 0, noData = false })
     );
 }
 
+// ─── DAILY CHECK-IN CARD ─────────────────────────────────────────────────────
+
+const SLIDER_META = [
+    { key: "energyLevel", label: "Energy", low: "Exhausted", high: "Limitless", color: "#CADB00", track: "rgba(202,219,0,0.15)" },
+    { key: "sleepQuality", label: "Sleep", low: "Terrible", high: "Amazing", color: "#7C6FCD", track: "rgba(124,111,205,0.15)" },
+    { key: "stressLevel", label: "Stress", low: "Zen", high: "Panicked", color: "#E07A3A", track: "rgba(224,122,58,0.15)" },
+];
+
+function DailyCheckInCard({ todayLog, onLogged }) {
+    const [values, setValues] = useState({ energyLevel: 5, sleepQuality: 5, stressLevel: 5, notes: "" });
+    const [submitting, setSubmitting] = useState(false);
+    const [expanded, setExpanded] = useState(!todayLog);
+    const [submitted, setSubmitted] = useState(!!todayLog);
+
+    const currentLog = todayLog || (submitted ? values : null);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setSubmitting(true);
+        try {
+            await postWithCookie("/api/daily-logs", {
+                energyLevel: Number(values.energyLevel),
+                sleepQuality: Number(values.sleepQuality),
+                stressLevel: Number(values.stressLevel),
+                notes: values.notes || undefined,
+            });
+            setSubmitted(true);
+            setExpanded(false);
+            if (onLogged) onLogged();
+        } catch (err) {
+            console.error("Check-in failed:", err);
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    if (submitted || todayLog) {
+        const log = currentLog;
+        return (
+            <div style={{
+                ...GLASS, borderRadius: 20, padding: "16px 24px",
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                marginBottom: 20, gap: 16,
+            }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <CheckCircle size={18} color="#CADB00" strokeWidth={2} />
+                    <span style={{ ...SANS, fontSize: 13, fontWeight: 600, color: "#1A1A18" }}>Today's check-in logged</span>
+                </div>
+                <div style={{ display: "flex", gap: 16 }}>
+                    {SLIDER_META.map(m => (
+                        <div key={m.key} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+                            <span style={{ fontSize: 16, fontWeight: 700, color: m.color, ...SERIF }}>
+                                {log?.[m.key] ?? values[m.key]}<span style={{ fontSize: 10, color: "rgba(26,26,24,0.35)" }}>/10</span>
+                            </span>
+                            <span style={{ fontSize: 11, color: "rgba(26,26,24,0.40)" }}>{m.label}</span>
+                        </div>
+                    ))}
+                </div>
+                <button onClick={() => setExpanded(e => !e)}
+                    style={{ fontSize: 12, color: "rgba(26,26,24,0.40)", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+                    <PenLine size={13} />Edit
+                </button>
+                {expanded && (
+                    <form onSubmit={handleSubmit}
+                        style={{
+                            position: "absolute", top: "calc(100% + 8px)", left: 0, right: 0, zIndex: 20,
+                            ...GLASS, borderRadius: 20, padding: 24, display: "flex", flexDirection: "column", gap: 16
+                        }}>
+                        {SLIDER_META.map(m => (
+                            <SliderRow key={m.key} meta={m} value={values[m.key]}
+                                onChange={v => setValues(p => ({ ...p, [m.key]: v }))} />
+                        ))}
+                        <button type="submit" disabled={submitting}
+                            style={{
+                                alignSelf: "flex-end", padding: "8px 20px", borderRadius: 9999, fontSize: 13, fontWeight: 700,
+                                background: "#1A1A18", color: "#CADB00", border: "none", cursor: submitting ? "not-allowed" : "pointer"
+                            }}>
+                            {submitting ? "Saving…" : "Update"}
+                        </button>
+                    </form>
+                )}
+            </div>
+        );
+    }
+
+    return (
+        <div style={{ ...GLASS, borderRadius: 20, padding: 24, marginBottom: 20, position: "relative" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div style={{
+                        width: 28, height: 28, borderRadius: 8, background: "rgba(202,219,0,0.12)",
+                        display: "flex", alignItems: "center", justifyContent: "center"
+                    }}>
+                        <PenLine size={13} color="#CADB00" strokeWidth={2} />
+                    </div>
+                    <div>
+                        <h3 style={{ ...SANS, fontSize: 15, fontWeight: 600, color: "#1A1A18", margin: 0 }}>Daily Check-in</h3>
+                        <p style={{ fontSize: 12, color: "rgba(26,26,24,0.45)", margin: 0 }}>How are you feeling today? This feeds your AI insights.</p>
+                    </div>
+                </div>
+                <span className="badge-neutral">Takes 10 sec</span>
+            </div>
+
+            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 24 }}>
+                    {SLIDER_META.map(m => (
+                        <SliderRow key={m.key} meta={m} value={values[m.key]}
+                            onChange={v => setValues(p => ({ ...p, [m.key]: v }))} />
+                    ))}
+                </div>
+                <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                    <input
+                        placeholder="Any notes? (symptoms, mood, observations…)"
+                        value={values.notes}
+                        onChange={e => setValues(p => ({ ...p, notes: e.target.value }))}
+                        style={{
+                            flex: 1, fontSize: 13, padding: "10px 14px", borderRadius: 10,
+                            border: "1px solid rgba(26,26,24,0.10)", background: "rgba(255,255,255,0.50)",
+                            outline: "none", color: "#1A1A18", fontFamily: "'DM Sans', sans-serif"
+                        }}
+                    />
+                    <button type="submit" disabled={submitting}
+                        style={{
+                            padding: "10px 24px", borderRadius: 9999, fontSize: 13, fontWeight: 700,
+                            background: "#1A1A18", color: "#CADB00", border: "none",
+                            cursor: submitting ? "not-allowed" : "pointer", whiteSpace: "nowrap",
+                            opacity: submitting ? 0.6 : 1, transition: "opacity 0.2s"
+                        }}>
+                        {submitting ? "Logging…" : "Log it"}
+                    </button>
+                </div>
+            </form>
+        </div>
+    );
+}
+
+function SliderRow({ meta, value, onChange }) {
+    return (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: "#1A1A18", ...SANS }}>{meta.label}</span>
+                <span style={{ fontSize: 18, fontWeight: 700, color: meta.color, ...SERIF }}>{value}</span>
+            </div>
+            <input type="range" min="1" max="10" value={value}
+                onChange={e => onChange(Number(e.target.value))}
+                style={{ width: "100%", accentColor: meta.color, height: 4, cursor: "pointer" }}
+            />
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ fontSize: 11, color: "rgba(26,26,24,0.35)" }}>{meta.low}</span>
+                <span style={{ fontSize: 11, color: "rgba(26,26,24,0.35)" }}>{meta.high}</span>
+            </div>
+        </div>
+    );
+}
+
 // ─── MAIN COMPONENT ──────────────────────────────────────────────────────────
 
 export default function NewDashboardPage() {
@@ -257,6 +413,7 @@ export default function NewDashboardPage() {
     const [diagnostics, setDiagnostics] = useState(null);
     const [interventions, setInterventions] = useState(null);
     const [insights, setInsights] = useState(null);
+    const [todayLog, setTodayLog] = useState(null);
 
     // Loading state per section
     const [loading, setLoading] = useState(true);
@@ -266,12 +423,13 @@ export default function NewDashboardPage() {
         const fetchAll = async () => {
             setLoading(true);
             try {
-                const [fitRes, summaryRes, diagRes, intRes, insRes] = await Promise.allSettled([
+                const [fitRes, summaryRes, diagRes, intRes, insRes, logsRes] = await Promise.allSettled([
                     getWithCookie("/api/fit/getGoogleFitData"),
                     getWithCookie("/api/dashboard/summary"),
                     getWithCookie("/api/diagnostics/latest"),
                     getWithCookie("/api/interventions/active"),
                     getWithCookie("/api/insights/daily"),
+                    getWithCookie("/api/daily-logs/weekly"),
                 ]);
 
                 if (fitRes.status === "fulfilled" && fitRes.value) {
@@ -283,6 +441,15 @@ export default function NewDashboardPage() {
                 if (diagRes.status === "fulfilled") setDiagnostics(diagRes.value);
                 if (intRes.status === "fulfilled") setInterventions(intRes.value?.interventions || []);
                 if (insRes.status === "fulfilled") setInsights(insRes.value?.data || []);
+
+                // Detect if user already logged today
+                if (logsRes.status === "fulfilled") {
+                    const todayStr = new Date().toISOString().split("T")[0];
+                    const todayEntry = (logsRes.value?.logs || []).find(l =>
+                        new Date(l.date).toISOString().split("T")[0] === todayStr
+                    );
+                    if (todayEntry) setTodayLog(todayEntry);
+                }
             } catch (e) {
                 console.error("Dashboard fetch error:", e);
             } finally {
@@ -354,8 +521,10 @@ export default function NewDashboardPage() {
     const avgDuration = activeInterventions.length > 0
         ? Math.round(totalDays / activeInterventions.length)
         : null;
+    // Fix 3: use server-computed compliancePct; fall back to frontend calc if missing
     const avgCompliance = activeInterventions.length > 0
         ? Math.round(activeInterventions.reduce((sum, i) => {
+            if (i.compliancePct !== undefined) return sum + i.compliancePct;
             const outcomes = i.outcomes?.length || 0;
             const daysSince = Math.max(1, Math.floor((Date.now() - new Date(i.startDate)) / 86400000));
             return sum + Math.min((outcomes / daysSince) * 100, 100);
@@ -380,6 +549,17 @@ export default function NewDashboardPage() {
     // Nutrition summary (from food logs)
     const nutritionSummary = summary?.nutritionSummary ?? null;
 
+    // Fix 5: glucose fallback chain — normalise different key names from PDF parser
+    const glucoseBiomarker = diagnostics?.biomarkers?.glucose_fasting
+        || diagnostics?.biomarkers?.glucose
+        || diagnostics?.biomarkers?.fasting_glucose
+        || null;
+
+    // Fix 4: 7d/30d filter drives the HRV sparkline window
+    const filteredWeeklyHRV = recoveryFilter === "30d"
+        ? (fitness?.weeklyHRV || [])  // extend when 30d sync is available
+        : fitness?.weeklyHRV;
+
     const recoveryLabel = () => {
         const r = fitness?.recoveryPct;
         if (r === null || r === undefined) return null;
@@ -398,6 +578,14 @@ export default function NewDashboardPage() {
                     100% { background-position: 200% 0; }
                 }
             `}</style>
+
+            {/* ── Daily Check-in (always first) ── */}
+            {!loading && (
+                <DailyCheckInCard
+                    todayLog={todayLog}
+                    onLogged={() => setTodayLog({ energyLevel: null, sleepQuality: null, stressLevel: null })}
+                />
+            )}
 
             {/* ── Row 1: Health Score + Intelligence Summary ── */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-5">
@@ -433,7 +621,8 @@ export default function NewDashboardPage() {
                         </div>
                     ) : topInsight ? (
                         <p style={{ fontSize: 13, lineHeight: 1.7, color: "rgba(26,26,24,0.70)", marginBottom: 16 }}>
-                            {topInsight.description || topInsight.content}
+                            {/* Fix 2: insight rules use `message`, older entries may use `description` or `content` */}
+                            {topInsight.description || topInsight.message || topInsight.content}
                         </p>
                     ) : (
                         <p style={{ fontSize: 13, color: "rgba(26,26,24,0.50)", marginBottom: 16, lineHeight: 1.7 }}>
@@ -449,7 +638,8 @@ export default function NewDashboardPage() {
                                         {ins.title}
                                     </div>
                                     <div style={{ fontSize: 12, color: "rgba(26,26,24,0.50)" }}>
-                                        {(ins.description || ins.content || "").slice(0, 80)}…
+                                        {/* Fix 2: normalise message/description/content across all insight rules */}
+                                        {(ins.description || ins.message || ins.content || "").slice(0, 80)}…
                                     </div>
                                 </div>
                             ))}
@@ -533,7 +723,8 @@ export default function NewDashboardPage() {
                         </div>
                     </div>
 
-                    <HRVSparkline weeklyHRV={fitness?.weeklyHRV} />
+                    {/* Fix 4: pass filter-aware HRV array */}
+                    <HRVSparkline weeklyHRV={filteredWeeklyHRV} />
 
                     <p style={{ fontSize: 13, fontStyle: "italic", color: "rgba(26,26,24,0.50)", marginTop: 10 }}>
                         {fitness?.recoveryPct !== null && fitness?.recoveryPct !== undefined
@@ -566,21 +757,21 @@ export default function NewDashboardPage() {
                                 }} />
                             </div>
                         </div>
-                        {/* Glucose — from diagnostics CGM if available */}
+                        {/* Glucose — Fix 5: normalise key name across different PDF parser outputs */}
                         <div>
                             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
                                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                                     <span style={{ fontSize: 13, color: "rgba(26,26,24,0.70)" }}>Glucose Stability</span>
-                                    {diagnostics?.biomarkers?.glucose_fasting && (
-                                        <span className={`badge-${diagnostics.biomarkers.glucose_fasting.status === "normal" ? "green" : "amber"}`}
+                                    {glucoseBiomarker && (
+                                        <span className={`badge-${glucoseBiomarker.status === "normal" ? "green" : "amber"}`}
                                             style={{ padding: "2px 8px", fontSize: 11 }}>
-                                            {diagnostics.biomarkers.glucose_fasting.status === "normal" ? "Stable" : "Monitor"}
+                                            {glucoseBiomarker.status === "normal" ? "Stable" : "Monitor"}
                                         </span>
                                     )}
                                 </div>
                                 <span style={{ fontSize: 13, fontWeight: 600, color: "#1A1A18" }}>
-                                    {loading ? "—" : diagnostics?.biomarkers?.glucose_fasting
-                                        ? `${diagnostics.biomarkers.glucose_fasting.value} ${diagnostics.biomarkers.glucose_fasting.unit}`
+                                    {loading ? "—" : glucoseBiomarker
+                                        ? `${glucoseBiomarker.value} ${glucoseBiomarker.unit}`
                                         : "—"}
                                 </span>
                             </div>
@@ -588,7 +779,21 @@ export default function NewDashboardPage() {
                     </div>
 
                     <p style={{ fontSize: 13, color: "rgba(26,26,24,0.55)", lineHeight: 1.6, marginBottom: 14 }}>
-                        {insights?.find(i => i.category === "nutrition")?.description
+                        {/* Fix 2: match nutrition insights by title keywords since engine uses `type`, not `category` */}
+                        {insights?.find(i =>
+                            i.title?.toLowerCase().includes("protein") ||
+                            i.title?.toLowerCase().includes("nutrition") ||
+                            i.title?.toLowerCase().includes("plateau") ||
+                            i.title?.toLowerCase().includes("carb") ||
+                            i.title?.toLowerCase().includes("hydration")
+                        )?.message
+                            || insights?.find(i =>
+                                i.title?.toLowerCase().includes("protein") ||
+                                i.title?.toLowerCase().includes("nutrition") ||
+                                i.title?.toLowerCase().includes("plateau") ||
+                                i.title?.toLowerCase().includes("carb") ||
+                                i.title?.toLowerCase().includes("hydration")
+                            )?.description
                             || "See your full nutrition breakdown and AI-generated meal suggestions."}
                     </p>
 
@@ -697,7 +902,10 @@ export default function NewDashboardPage() {
                             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                                 {activeInterventions.slice(0, 3).map((exp, i) => {
                                     const daysSince = Math.max(1, Math.floor((Date.now() - new Date(exp.startDate)) / 86400000));
-                                    const compliance = Math.min(Math.round((exp.outcomes?.length || 0) / daysSince * 100), 100);
+                                    // Fix 3: prefer server-computed compliancePct, fall back to frontend calc
+                                    const compliance = exp.compliancePct !== undefined
+                                        ? exp.compliancePct
+                                        : Math.min(Math.round((exp.outcomes?.length || 0) / daysSince * 100), 100);
                                     const colors = ["#7C6FCD", "#CADB00", "#E07A3A"];
                                     return (
                                         <div key={exp._id}>

@@ -198,14 +198,19 @@ export class InterventionService {
     }
 
     /**
-     * Update an intervention
+     * Update an intervention — userId is required to enforce ownership
      * @param {string} interventionId 
+     * @param {string} userId - MongoDB ObjectId of the owner
      * @param {Object} updates 
      */
-    async updateIntervention(interventionId, updates) {
+    async updateIntervention(interventionId, userId, updates) {
         try {
-            const intervention = await Intervention.findByIdAndUpdate(interventionId, updates, { new: true });
-            if (!intervention) throw new Error('Intervention not found');
+            const intervention = await Intervention.findOneAndUpdate(
+                { _id: interventionId, user: userId },
+                updates,
+                { new: true }
+            );
+            if (!intervention) throw new Error('Intervention not found or access denied');
             return intervention;
         } catch (error) {
             console.error('Error updating intervention:', error);

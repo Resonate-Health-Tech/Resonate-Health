@@ -163,6 +163,14 @@ export async function suggestInterventions(body = {}) {
   return postWithCookie("/api/interventions/suggest", body);
 }
 
+export async function getDailyInsights() {
+  return getWithCookie("/api/insights/daily");
+}
+
+export async function refreshInsights() {
+  return postWithCookie("/api/insights/refresh", {});
+}
+
 export async function stopIntervention(id, status = "discontinued", reason = null) {
   return patchWithCookie(`/api/interventions/${id}/stop`, { status, reason });
 }

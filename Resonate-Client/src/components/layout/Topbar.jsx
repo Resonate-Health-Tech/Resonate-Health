@@ -18,9 +18,10 @@ function formatDate() {
 }
 
 export default function Topbar() {
-    const { user } = useContext(AuthContext);
+    const { user, profile } = useContext(AuthContext);
 
     const firstName =
+        profile?.name?.split(" ")[0] ||
         user?.displayName?.split(" ")[0] ||
         user?.email?.split("@")[0] ||
         "there";

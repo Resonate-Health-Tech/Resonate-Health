@@ -20,9 +20,11 @@ export const generateWorkout = async (req, res) => {
 
         let age = null, gender = null, weight = null, cyclePhase = null;
         if (req.user) {
-            age = req.user.age;
+            age = req.user.dateOfBirth
+                ? Math.floor((Date.now() - new Date(req.user.dateOfBirth)) / (365.25 * 24 * 3600 * 1000))
+                : null;
             gender = req.user.gender;
-            weight = req.user.weight;
+            weight = req.user.weightKg || null;
             if (req.user.menstrualProfile) {
                 cyclePhase = req.user.menstrualProfile.phase;
             }
@@ -123,14 +125,22 @@ export const completeWorkout = async (req, res) => {
         await workout.save();
 
         try {
+            // Estimate calories burned: MET-based formula (MET × weight(kg) × hours)
+            // MET: low RPE (<4) ~ 4, moderate (4-7) ~ 7, high (>7) ~ 10
+            const resolvedDurationMin = durationMinutes || parseInt(workout.plan.duration) || 45;
+            const durationHours = resolvedDurationMin / 60;
+            const userWeightKg = req.user?.weightKg || 70;
+            const metValue = rpe > 7 ? 10 : rpe > 4 ? 7 : 4;
+            const caloriesBurned = Math.round(metValue * userWeightKg * durationHours);
+
             const workoutEvent = {
                 name: workout.plan.title || "Workout",
-                type: workout.inputs?.fitnessLevel || "General", // or map inputs to type
+                type: workout.inputs?.fitnessLevel || "General",
                 totalSets: workout.plan.exercises.reduce((acc, ex) => acc + (ex.sets || 0), 0),
-                durationMinutes: durationMinutes || parseInt(workout.plan.duration) || 45,
+                durationMinutes: resolvedDurationMin,
                 rpe: rpe,
                 energyLevel: energyLevel,
-                caloriesBurned: 300, // Estimate or calc
+                caloriesBurned,
                 exercises: workout.plan.exercises,
                 timestamp: new Date().toISOString()
             };

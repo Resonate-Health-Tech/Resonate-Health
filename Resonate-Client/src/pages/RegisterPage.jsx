@@ -14,7 +14,7 @@ export default function RegisterPage() {
     password: "",
     name: "",
     gender: "",
-    age: "",
+    dob: "",
     height: "",
     weight: "",
     dietType: "",
@@ -47,10 +47,8 @@ export default function RegisterPage() {
     if (form.name) payload.name = form.name;
     if (form.gender) payload.gender = form.gender;
 
-    if (form.age) {
-      const dob = new Date();
-      dob.setFullYear(dob.getFullYear() - Number(form.age));
-      payload.dateOfBirth = dob;
+    if (form.dob) {
+      payload.dateOfBirth = new Date(form.dob);
     }
 
     if (form.height) payload.heightCm = Number(form.height);
@@ -149,8 +147,15 @@ export default function RegisterPage() {
       }
     }
     if (step === 2) {
-      if (!form.name || !form.gender || !form.age || !form.height || !form.weight) {
+      if (!form.name || !form.gender || !form.dob || !form.height || !form.weight) {
         setError("All fields are required");
+        return false;
+      }
+      const today = new Date();
+      const birthDate = new Date(form.dob);
+      const age = today.getFullYear() - birthDate.getFullYear();
+      if (age < 10 || age > 100) {
+        setError("Please enter a valid date of birth");
         return false;
       }
     }
@@ -347,10 +352,15 @@ export default function RegisterPage() {
                     <option value="female">Female</option>
                     <option value="other">Other</option>
                   </select>
-                  <input type="number" required placeholder="Age *" min="10" max="100"
-                    style={{ padding: "12px 16px", borderRadius: 12, border: "2px solid rgba(26,26,24,0.12)", background: "#FFF", fontSize: 14, color: "#1A1A18", outline: "none", fontFamily: "'DM Sans', sans-serif" }}
-                    value={form.age} onChange={(e) => updateField("age", e.target.value)}
-                  />
+                  <div style={{ position: "relative" }}>
+                    <label style={{ fontSize: 11, fontWeight: 600, color: "rgba(26,26,24,0.50)", display: "block", marginBottom: 4 }}>Date of Birth *</label>
+                    <input type="date" required
+                      max={(() => { const d = new Date(); d.setFullYear(d.getFullYear() - 10); return d.toISOString().split('T')[0]; })()}
+                      min={(() => { const d = new Date(); d.setFullYear(d.getFullYear() - 100); return d.toISOString().split('T')[0]; })()}
+                      style={{ width: "100%", padding: "10px 16px", borderRadius: 12, boxSizing: "border-box", border: "2px solid rgba(26,26,24,0.12)", background: "#FFF", fontSize: 14, color: "#1A1A18", outline: "none", fontFamily: "'DM Sans', sans-serif" }}
+                      value={form.dob} onChange={(e) => updateField("dob", e.target.value)}
+                    />
+                  </div>
                 </div>
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>

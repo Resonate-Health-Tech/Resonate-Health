@@ -18,10 +18,26 @@ export default function WaterTracker({ externalData, setExternalData }) {
         if (!isControlled) {
             fetchWaterData();
         } else {
+            // In controlled mode, today's data comes from the parent,
+            // but we still need to fetch history to populate the bar chart.
             setNewGoal(externalData.goalMl || 2500);
-            setLoading(false);
+            fetchHistoryOnly().finally(() => setLoading(false));
         }
     }, [externalData, isControlled]);
+
+    const fetchHistoryOnly = async () => {
+        try {
+            const res = await getWithCookie('/api/water');
+            if (res && res.history) {
+                setWaterHistory(res.history);
+            }
+            if (res && res.today && res.today.logs) {
+                setTodayLogs(res.today.logs);
+            }
+        } catch (error) {
+            console.error("Failed to fetch water history", error);
+        }
+    };
 
     const fetchWaterData = async () => {
         try {

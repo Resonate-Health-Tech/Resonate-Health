@@ -20,7 +20,7 @@ const NAV_ITEMS = [
 ];
 
 export default function Sidebar() {
-    const { user } = useContext(AuthContext);
+    const { user, profile } = useContext(AuthContext);
     const location = useLocation();
 
     const isActive = (path) =>
@@ -34,10 +34,8 @@ export default function Sidebar() {
         sessionStorage.removeItem("verifiedUser");
     };
 
-    const firstName =
-        user?.displayName?.split(" ")[0] ||
-        user?.email?.split("@")[0] ||
-        "User";
+    const displayName = profile?.name || user?.displayName || user?.email?.split("@")[0] || "User";
+    const firstName = displayName.split(" ")[0];
     const avatarChar = firstName[0]?.toUpperCase() || "U";
 
     const renderNavLink = ({ path, icon: Icon, label }) => {

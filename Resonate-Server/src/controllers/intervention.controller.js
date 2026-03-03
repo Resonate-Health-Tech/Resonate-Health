@@ -2,6 +2,7 @@
 import { InterventionService } from '../services/intervention.service.js';
 import { MemoryService } from '../services/memory.service.js';
 import { MemoryContextBuilder } from '../services/memory/memoryContext.builder.js';
+import { insightsCacheService } from '../services/insights/insights.cache.service.js';
 import { User } from '../models/User.js';
 import axios from 'axios';
 
@@ -38,7 +39,22 @@ export const getActiveInterventions = async (req, res) => {
         const userId = req.user._id;
         const interventions = await interventionService.getActiveInterventions(userId);
 
-        res.status(200).json({ success: true, interventions });
+        // Compute compliancePct server-side so the dashboard has a reliable value.
+        // Respects checkInFrequency: daily expects one outcome per day, weekly expects one per 7 days.
+        const enriched = interventions.map(intervention => {
+            const plain = intervention.toObject ? intervention.toObject() : { ...intervention };
+            const daysSince = Math.max(1, Math.floor((Date.now() - new Date(plain.startDate)) / 86400000));
+            const expected = plain.checkInFrequency === "weekly"
+                ? Math.max(1, Math.ceil(daysSince / 7))
+                : daysSince;
+            plain.compliancePct = Math.min(
+                Math.round(((plain.outcomes?.length || 0) / expected) * 100),
+                100
+            );
+            return plain;
+        });
+
+        res.status(200).json({ success: true, interventions: enriched });
     } catch (error) {
         console.error("Error fetching active interventions:", error);
         res.status(500).json({ success: false, message: "Internal server error" });
@@ -111,6 +127,8 @@ export const stopIntervention = async (req, res) => {
             reason,
             req.user.firebaseUid
         );
+        // Invalidate insights cache — stopping an intervention changes AI recommendations
+        insightsCacheService.invalidateCache(req.user.firebaseUid).catch(() => { });
         res.status(200).json({ success: true, intervention });
     } catch (error) {
         console.error("Error stopping intervention:", error);
@@ -125,7 +143,9 @@ export const updateIntervention = async (req, res) => {
     try {
         const { id } = req.params;
         const updates = req.body;
-        const intervention = await interventionService.updateIntervention(id, updates);
+        const intervention = await interventionService.updateIntervention(id, req.user._id, updates);
+        // Invalidate insights cache — updating an intervention changes AI recommendations
+        insightsCacheService.invalidateCache(req.user.firebaseUid).catch(() => { });
         res.status(200).json({ success: true, intervention });
     } catch (error) {
         console.error("Error updating intervention:", error);

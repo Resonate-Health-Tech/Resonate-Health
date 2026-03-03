@@ -57,7 +57,13 @@ const userSchema = new mongoose.Schema(
     dailyMealPlan: { type: Object, default: null },
     mealPlanDate: { type: Date, default: null }
   },
-  { timestamps: true }
+  { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
+
+// Computed age from dateOfBirth — avoids storing a value that goes stale every year
+userSchema.virtual('age').get(function () {
+  if (!this.dateOfBirth) return null;
+  return Math.floor((Date.now() - new Date(this.dateOfBirth)) / (365.25 * 24 * 3600 * 1000));
+});
 
 export const User = mongoose.model("User", userSchema);

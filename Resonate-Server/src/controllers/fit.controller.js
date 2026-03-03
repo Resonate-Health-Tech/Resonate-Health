@@ -102,7 +102,7 @@ export const getGoogleFitData = async (req, res) => {
         stepGoal: 1
       }
     );
-
+    if (!fitness) return res.status(404).json({ message: "No fitness data linked yet" });
 
     return res.json(fitness);
   }

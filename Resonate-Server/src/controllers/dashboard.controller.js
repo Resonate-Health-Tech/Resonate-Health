@@ -32,7 +32,7 @@ export const getDashboardSummary = async (req, res) => {
                 .sort({ createdAt: -1 })
                 .limit(30)
                 .select("plan status rpe energyLevel inputs createdAt completedAt"),
-            FoodLog.find({ userId: userId.toString(), date: { $gte: sevenDaysAgo } })
+            FoodLog.find({ userId: firebaseUid, date: { $gte: sevenDaysAgo } })
                 .select("nutritionalInfo date"),
         ]);
 

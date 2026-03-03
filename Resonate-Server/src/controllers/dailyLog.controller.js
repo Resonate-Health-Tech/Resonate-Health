@@ -21,12 +21,12 @@ export const createOrUpdateDailyLog = async (req, res) => {
         });
 
         if (dailyLog) {
-            if (energyLevel) dailyLog.energyLevel = energyLevel;
-            if (sleepQuality) dailyLog.sleepQuality = sleepQuality;
-            if (stressLevel) dailyLog.stressLevel = stressLevel;
-            if (mood) dailyLog.mood = mood;
-            if (symptoms) dailyLog.symptoms = symptoms;
-            if (notes) dailyLog.notes = notes;
+            if (energyLevel !== undefined) dailyLog.energyLevel = energyLevel;
+            if (sleepQuality !== undefined) dailyLog.sleepQuality = sleepQuality;
+            if (stressLevel !== undefined) dailyLog.stressLevel = stressLevel;
+            if (mood !== undefined) dailyLog.mood = mood;
+            if (symptoms !== undefined) dailyLog.symptoms = symptoms;
+            if (notes !== undefined) dailyLog.notes = notes;
 
             await dailyLog.save();
         } else {
