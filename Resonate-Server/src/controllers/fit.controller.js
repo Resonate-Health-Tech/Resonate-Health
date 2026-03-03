@@ -20,6 +20,23 @@ export const redirectToGoogleFit = (req, res) => {
   res.redirect(url);
 };
 
+export const getGoogleFitAuthUrl = (req, res) => {
+  try {
+    const url = oauth2Client.generateAuthUrl({
+      access_type: "offline",
+      scope: [
+        "https://www.googleapis.com/auth/fitness.activity.read",
+        "https://www.googleapis.com/auth/fitness.sleep.read",
+      ],
+      prompt: "consent",
+      state: req.user.firebaseUid,
+    });
+    res.json({ url });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to generate Google Fit Auth URL" });
+  }
+};
+
 export const handleGoogleFitCallback = async (req, res) => {
   try {
     const { code, state: firebaseUid } = req.query;

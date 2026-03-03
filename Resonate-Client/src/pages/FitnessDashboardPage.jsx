@@ -29,6 +29,21 @@ export default function FitnessDashboardPage() {
   const [completingId, setCompletingId] = useState(null);
   // Modal state for RPE capture on completion
   const [completeModal, setCompleteModal] = useState({ open: false, workoutId: null });
+  const [connectingGoogleFit, setConnectingGoogleFit] = useState(false);
+
+  const handleConnectGoogleFit = async () => {
+    try {
+      setConnectingGoogleFit(true);
+      const res = await getWithCookie("/api/fit/google/url");
+      if (res && res.url) {
+        window.location.href = res.url;
+      }
+    } catch (error) {
+      console.error("Failed to get Google Fit URL", error);
+    } finally {
+      setConnectingGoogleFit(false);
+    }
+  };
 
   const loadWater = async () => {
     try {
@@ -255,10 +270,11 @@ export default function FitnessDashboardPage() {
           </div>
         ) : (
           <button
-            onClick={() => window.location.href = `${import.meta.env.VITE_API_BASE_URL}/api/fit/google`}
-            className="border border-[#CADB00] text-[#8C9800] px-5 py-2.5 rounded-2xl font-medium flex items-center gap-2 hover:bg-[#CADB00]/10 transition-colors"
+            onClick={handleConnectGoogleFit}
+            disabled={connectingGoogleFit}
+            className={`border border-[#CADB00] text-[#8C9800] px-5 py-2.5 rounded-2xl font-medium flex items-center gap-2 transition-colors ${connectingGoogleFit ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#CADB00]/10'}`}
           >
-            Connect Google Fit
+            {connectingGoogleFit ? 'Connecting...' : 'Connect Google Fit'}
           </button>
         )}
       </div>

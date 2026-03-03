@@ -3,17 +3,16 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { signOut } from "firebase/auth";
 import { auth } from "../firebase";
 import { AuthContext } from "../App";
+import { getWithCookie } from "../api";
 
 import DesktopNav from "./nav/DesktopNav";
 import MobileMenu from "./nav/MobileMenu";
 import BottomNav from "./nav/BottomNav";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-
 /**
  * Main navigation bar component.
  * Refactored from 527 lines to ~90 lines using subcomponents.
- */
+*/
 export default function Navbar() {
   const { user } = useContext(AuthContext);
   const location = useLocation();
@@ -39,8 +38,15 @@ export default function Navbar() {
   const isActive = (path) => location.pathname === path;
   const isActiveGroup = (paths) => paths.some((p) => location.pathname.startsWith(p));
 
-  const handleConnectGoogleFit = () => {
-    window.location.href = `${API_BASE_URL}/api/fit/google`;
+  const handleConnectGoogleFit = async () => {
+    try {
+      const res = await getWithCookie("/api/fit/google/url");
+      if (res && res.url) {
+        window.location.href = res.url;
+      }
+    } catch (error) {
+      console.error("Failed to get Google Fit URL", error);
+    }
   };
 
   const handleLogout = async () => {
