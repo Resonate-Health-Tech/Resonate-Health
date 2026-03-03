@@ -92,9 +92,8 @@ export const handleGoogleFitCallback = async (req, res) => {
       }
     );
 
-    return res.redirect(
-      `${process.env.CLIENT_URL}/dashboard`
-    );
+    const clientUrl = process.env.CLIENT_URL || process.env.CLIENT_URL_1 || "http://localhost:5173";
+    return res.redirect(`${clientUrl}/dashboard`);
   } catch (error) {
     console.error("Google Fit OAuth error:", error);
     res.status(500).send("Failed to connect Google Fit");
