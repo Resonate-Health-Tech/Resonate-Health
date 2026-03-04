@@ -15,7 +15,7 @@ const insightSchema = new mongoose.Schema(
     {
         type: { type: String },        // 'critical' | 'warning' | 'action' | 'suggestion' | 'positive'
         title: { type: String },
-        body: { type: String },
+        description: { type: String },  // matches what the AI microservice returns
         category: { type: String },
         icon: { type: String }
     },

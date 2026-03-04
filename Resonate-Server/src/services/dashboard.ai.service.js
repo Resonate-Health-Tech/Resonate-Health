@@ -30,7 +30,7 @@ export class DashboardAIService {
         try {
             // Try cache first
             const cached = await DashboardCache.findOne({ userId });
-            if (cached && cached.healthScore !== null) {
+            if (cached) {
                 logger.info('DASHBOARD_AI', 'Cache HIT', { userId });
                 return {
                     healthScore: cached.healthScore,
@@ -66,27 +66,33 @@ export class DashboardAIService {
 
     async _generateAndStore(userId, rawData, userProfile) {
         const aiResult = await this._callMicroservice(userId, rawData, userProfile);
-        if (!aiResult) return null;
 
-        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+        // If the microservice timed out or failed, we use negative caching (15 mins)
+        // to prevent retrying the call on every single page load.
+        const expiresAt = new Date(Date.now() + (aiResult ? 24 * 60 * 60 * 1000 : 15 * 60 * 1000));
 
         await DashboardCache.findOneAndUpdate(
             { userId },
             {
                 $set: {
                     userId,
-                    healthScore: aiResult.healthScore ?? null,
-                    healthScoreBreakdown: aiResult.healthScoreBreakdown ?? null,
-                    recoveryStatus: aiResult.recoveryStatus ?? null,
-                    recoveryNarrative: aiResult.recoveryNarrative ?? null,
-                    trainingBalance: aiResult.trainingBalance ?? null,
-                    weeklyNarrative: aiResult.weeklyNarrative ?? null,
+                    healthScore: aiResult?.healthScore ?? null,
+                    healthScoreBreakdown: aiResult?.healthScoreBreakdown ?? null,
+                    recoveryStatus: aiResult?.recoveryStatus ?? null,
+                    recoveryNarrative: aiResult?.recoveryNarrative ?? null,
+                    trainingBalance: aiResult?.trainingBalance ?? null,
+                    weeklyNarrative: aiResult?.weeklyNarrative ?? null,
                     generatedAt: new Date(),
                     expiresAt,
                 }
             },
             { upsert: true, new: true }
         );
+
+        if (!aiResult) {
+            logger.warn('DASHBOARD_AI', 'AI call failed, applied negative cache', { userId });
+            return null;
+        }
 
         logger.info('DASHBOARD_AI', 'AI analysis cached', { userId });
         return { ...aiResult, cacheHit: false };

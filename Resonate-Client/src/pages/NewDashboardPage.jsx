@@ -46,34 +46,45 @@ export default function NewDashboardPage() {
     const queryClient = useQueryClient();
 
     // ── Queries ──
+    const queryConfig = {
+        staleTime: 10 * 60 * 1000, // 10 minutes
+        refetchOnWindowFocus: false,
+    };
+
     const { data: fitRes, isLoading: fitLoading } = useQuery({
         queryKey: ['fitData'],
         queryFn: () => getWithCookie("/api/fit/getGoogleFitData").catch(() => null),
+        ...queryConfig,
     });
 
     const { data: summary, isLoading: summaryLoading } = useQuery({
         queryKey: ['dashboardSummary'],
         queryFn: () => getWithCookie("/api/dashboard/summary").catch(() => null),
+        ...queryConfig,
     });
 
     const { data: diagnostics, isLoading: diagLoading } = useQuery({
         queryKey: ['diagnosticsLatest'],
         queryFn: () => getWithCookie("/api/diagnostics/latest").catch(() => null),
+        ...queryConfig,
     });
 
     const { data: intRes, isLoading: intLoading } = useQuery({
         queryKey: ['activeInterventions'],
         queryFn: () => getWithCookie("/api/interventions/active").catch(() => null),
+        ...queryConfig,
     });
 
     const { data: insightsRes, isLoading: insightsLoading } = useQuery({
         queryKey: ['dailyInsights'],
         queryFn: () => getWithCookie("/api/insights/daily").catch(() => null),
+        ...queryConfig,
     });
 
     const { data: logsRes, isLoading: logsLoading } = useQuery({
         queryKey: ['weeklyLogs'],
         queryFn: () => getWithCookie("/api/daily-logs/weekly").catch(() => null),
+        ...queryConfig,
     });
 
     const loading = fitLoading || summaryLoading || diagLoading || intLoading || insightsLoading || logsLoading;

@@ -26,10 +26,10 @@ export class InsightsCacheService {
             // 1. Try serving from cache
             const cached = await InsightCache.findOne({ userId });
 
-            if (cached && cached.insights?.length > 0) {
+            if (cached) {
                 logger.info('INSIGHTS_CACHE', 'Cache HIT — serving stored insights', { userId });
                 return {
-                    insights: cached.insights,
+                    insights: cached.insights || [],
                     cacheHit: true,
                     generatedAt: cached.generatedAt.toISOString()
                 };

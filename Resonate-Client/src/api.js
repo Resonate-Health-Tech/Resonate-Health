@@ -71,7 +71,7 @@ export function putWithCookie(path, body) {
   return extractData(apiClient.put(path, body));
 }
 
-export function patchWithCookie(path, body) {
+function patchWithCookie(path, body) {
   return extractData(apiClient.patch(path, body));
 }
 
@@ -95,25 +95,16 @@ export function analyzeFoodImage(file, cuisine) {
   }));
 }
 
-export function getFoodHistory() {
-  return getWithCookie("/api/food/history");
-}
 
 export function createIntervention(body) {
   return postWithCookie("/api/interventions", body);
 }
 
-export function getActiveInterventions() {
-  return getWithCookie("/api/interventions/active");
-}
 
 export function getAllInterventions() {
   return getWithCookie("/api/interventions");
 }
 
-export function suggestInterventions(body = {}) {
-  return postWithCookie("/api/interventions/suggest", body);
-}
 
 export function getDailyInsights() {
   return getWithCookie("/api/insights/daily");
@@ -131,13 +122,6 @@ export function updateIntervention(id, body) {
   return putWithCookie(`/api/interventions/${id}`, body);
 }
 
-export function createDailyLog(body) {
-  return postWithCookie("/api/daily-logs", body);
-}
-
-export function fetchWeeklyLogs() {
-  return getWithCookie("/api/daily-logs/weekly");
-}
 
 export function getUserMemories(category) {
   return getWithCookie(`/api/user/memories${category ? `?category=${category}` : ""}`);
