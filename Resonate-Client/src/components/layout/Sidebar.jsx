@@ -5,8 +5,7 @@ import { auth } from "../../firebase";
 import { AuthContext } from "../../App";
 import {
     LayoutDashboard, Activity, Utensils, FlaskConical,
-    Beaker, Brain, Sparkles, LogOut, ChevronRight,
-    Dumbbell, History,
+    Beaker, Brain, Sparkles, LogOut, ChevronRight, X,
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -19,7 +18,7 @@ const NAV_ITEMS = [
     { path: "/insights", icon: Sparkles, label: "Insights" },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ isOpen, onClose }) {
     const { user, profile } = useContext(AuthContext);
     const location = useLocation();
 
@@ -44,6 +43,7 @@ export default function Sidebar() {
             <li key={path}>
                 <Link
                     to={path}
+                    onClick={onClose}
                     className="flex items-center gap-3 py-2.5 rounded-r-xl transition-all duration-150"
                     style={{
                         paddingLeft: active ? 29 : 16,
@@ -73,9 +73,9 @@ export default function Sidebar() {
         );
     };
 
-    return (
+    const sidebarContent = (
         <aside
-            className="sidebar-glass fixed left-0 top-0 h-screen w-60 z-50 flex flex-col"
+            className="sidebar-glass h-screen w-60 z-50 flex flex-col"
             style={{ fontFamily: "'DM Sans', sans-serif" }}
         >
             {/* ── Logo ── */}
@@ -98,15 +98,24 @@ export default function Sidebar() {
                         fontWeight: 600,
                         color: "#1A1A18",
                         fontFamily: "'DM Sans', sans-serif",
+                        flex: 1,
                     }}
                 >
                     Resonate
                 </span>
+                {/* Close button — mobile only */}
+                <button
+                    onClick={onClose}
+                    className="lg:hidden p-1 rounded-lg transition-colors"
+                    style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(26,26,24,0.40)" }}
+                    aria-label="Close menu"
+                >
+                    <X size={18} strokeWidth={1.7} />
+                </button>
             </div>
 
             {/* ── Nav ── */}
             <nav className="flex-1 overflow-y-auto py-4 custom-scrollbar">
-                {/* MAIN section */}
                 <div className="overline-label px-5 py-2">MAIN</div>
                 <ul className="px-3 space-y-0.5">
                     {NAV_ITEMS.map(renderNavLink)}
@@ -115,9 +124,9 @@ export default function Sidebar() {
 
             {/* ── Bottom: User + Logout ── */}
             <div className="p-5" style={{ borderTop: "1px solid rgba(26,26,24,0.08)" }}>
-                {/* User row — clicks to /profile */}
                 <Link
                     to="/profile"
+                    onClick={onClose}
                     className="flex items-center gap-2.5 mb-3 rounded-xl transition-all duration-150"
                     style={{ textDecoration: "none", padding: "6px 8px", margin: "-6px -8px 4px" }}
                     onMouseEnter={e => { e.currentTarget.style.background = "rgba(202,219,0,0.10)"; }}
@@ -126,8 +135,7 @@ export default function Sidebar() {
                     <div
                         className="rounded-full flex items-center justify-center flex-shrink-0"
                         style={{
-                            width: 32,
-                            height: 32,
+                            width: 32, height: 32,
                             background: "#CADB00",
                             color: "#1A1A18",
                             fontSize: 13,
@@ -136,26 +144,17 @@ export default function Sidebar() {
                     >
                         {avatarChar}
                     </div>
-
                     <div className="flex-1 min-w-0">
-                        <p style={{
-                            fontSize: 12, fontWeight: 600, color: "#1A1A18",
-                            whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-                        }}>
+                        <p style={{ fontSize: 12, fontWeight: 600, color: "#1A1A18", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                             {firstName}
                         </p>
-                        <p style={{
-                            fontSize: 11, color: "rgba(26,26,24,0.45)",
-                            whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-                        }}>
+                        <p style={{ fontSize: 11, color: "rgba(26,26,24,0.45)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                             {user?.email}
                         </p>
                     </div>
-
                     <ChevronRight size={14} strokeWidth={1.7} style={{ color: "rgba(26,26,24,0.30)", flexShrink: 0 }} />
                 </Link>
 
-                {/* Logout */}
                 <button
                     onClick={handleLogout}
                     className="flex items-center gap-3 text-xs transition-colors duration-150"
@@ -168,5 +167,22 @@ export default function Sidebar() {
                 </button>
             </div>
         </aside>
+    );
+
+    return (
+        <>
+            {/* Desktop: fixed sidebar */}
+            <div className="hidden lg:block fixed left-0 top-0 h-screen">
+                {sidebarContent}
+            </div>
+
+            {/* Mobile: slide-in drawer */}
+            <div
+                className={`fixed left-0 top-0 h-screen z-50 transition-transform duration-300 ease-in-out lg:hidden`}
+                style={{ transform: isOpen ? "translateX(0)" : "translateX(-100%)" }}
+            >
+                {sidebarContent}
+            </div>
+        </>
     );
 }

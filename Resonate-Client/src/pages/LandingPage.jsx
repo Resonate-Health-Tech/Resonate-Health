@@ -201,6 +201,7 @@ function Step({ num, title, desc, accent }) {
 export default function LandingPage() {
   const [mounted, setMounted] = useState(false);
   const [navScrolled, setNavScrolled] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -329,6 +330,34 @@ export default function LandingPage() {
         }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        .mobile-nav-drawer {
+          position: fixed; top: 0; right: 0; bottom: 0; left: 0;
+          z-index: 200;
+        }
+        .mobile-nav-overlay {
+          position: absolute; inset: 0;
+          background: rgba(26,26,24,0.35);
+          backdrop-filter: blur(4px);
+        }
+        .mobile-nav-panel {
+          position: absolute; top: 0; right: 0; bottom: 0;
+          width: min(320px, 85vw);
+          background: rgba(255,255,255,0.96);
+          backdrop-filter: blur(20px);
+          border-left: 1px solid rgba(0,0,0,0.07);
+          display: flex; flex-direction: column;
+          padding: 24px;
+          gap: 16px;
+          animation: slideFromRight 0.25s ease;
+        }
+        @keyframes slideFromRight {
+          from { transform: translateX(100%); opacity: 0; }
+          to   { transform: translateX(0);    opacity: 1; }
+        }
+        @media (max-width: 640px) {
+          .how-it-works-grid { grid-template-columns: 1fr !important; }
+          .cta-banner { padding: 40px 24px !important; border-radius: 24px !important; }
+        }
         .hero-title {
           font-family: 'DM Serif Display', serif;
           font-weight: 400;
@@ -387,11 +416,41 @@ export default function LandingPage() {
         }
       `}</style>
 
+      {/* ── Mobile Nav Drawer ── */}
+      {mobileNavOpen && (
+        <div className="mobile-nav-drawer">
+          <div className="mobile-nav-overlay" onClick={() => setMobileNavOpen(false)} />
+          <div className="mobile-nav-panel">
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#CADB00", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
+                    <path d="M7 2v10M2 7h10" stroke="#1A1A18" strokeWidth="2" strokeLinecap="round" />
+                  </svg>
+                </div>
+                <span style={{ fontSize: 16, fontWeight: 700, color: "#1A1A18", fontFamily: "'DM Sans', sans-serif" }}>Resonate</span>
+              </div>
+              <button
+                onClick={() => setMobileNavOpen(false)}
+                style={{ background: "none", border: "none", cursor: "pointer", padding: 6, fontSize: 20, color: "rgba(26,26,24,0.50)" }}
+                aria-label="Close menu"
+              >✕</button>
+            </div>
+            <Link to="/login" className="cta-secondary" onClick={() => setMobileNavOpen(false)} style={{ width: "100%", justifyContent: "center", fontSize: 15 }}>
+              Sign in
+            </Link>
+            <Link to="/register" className="cta-primary" onClick={() => setMobileNavOpen(false)} style={{ width: "100%", justifyContent: "center", fontSize: 15 }}>
+              Get started →
+            </Link>
+          </div>
+        </div>
+      )}
+
       {/* ── NAVBAR ── */}
       <nav
         style={{
           position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
-          padding: "0 24px",
+          padding: "0 clamp(16px, 3vw, 24px)",
           height: 64,
           display: "flex", alignItems: "center", justifyContent: "space-between",
           background: navScrolled ? "rgba(240,247,224,0.90)" : "transparent",
@@ -417,8 +476,8 @@ export default function LandingPage() {
           </span>
         </div>
 
-        {/* Nav links */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        {/* Desktop Nav links */}
+        <div className="hidden sm:flex" style={{ alignItems: "center", gap: 8 }}>
           <Link to="/login" className="cta-secondary" style={{ padding: "8px 20px", fontSize: 14 }}>
             Sign in
           </Link>
@@ -426,6 +485,22 @@ export default function LandingPage() {
             Get started
           </Link>
         </div>
+
+        {/* Mobile hamburger */}
+        <button
+          className="sm:hidden"
+          onClick={() => setMobileNavOpen(true)}
+          style={{
+            background: "rgba(26,26,24,0.06)", border: "none", cursor: "pointer",
+            borderRadius: 10, padding: "8px 10px",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}
+          aria-label="Open menu"
+        >
+          <svg width="20" height="20" fill="none" stroke="#1A1A18" strokeWidth="2" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
       </nav>
 
       {/* ── HERO SECTION ── */}
@@ -604,11 +679,11 @@ export default function LandingPage() {
         WebkitBackdropFilter: "blur(20px)",
         border: "1.5px solid rgba(255,255,255,0.80)",
         boxShadow: "0 8px 40px rgba(0,0,0,0.06)",
-        padding: "64px 48px",
+        padding: "clamp(32px, 5vw, 64px) clamp(20px, 4vw, 48px)",
         maxWidth: 1200,
         margin: "0 auto 100px",
       }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 80, alignItems: "center" }}>
+        <div className="how-it-works-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "clamp(32px, 5vw, 80px)", alignItems: "center" }}>
           {/* Left: visual */}
           <div style={{ position: "relative" }}>
             {/* Big lime circle */}
@@ -697,11 +772,11 @@ export default function LandingPage() {
       </section>
 
       {/* ── BIG CTA BANNER ── */}
-      <section style={{ padding: "0 24px 100px", maxWidth: 1200, margin: "0 auto" }}>
-        <div style={{
+      <section style={{ padding: "0 clamp(16px, 3vw, 24px) 100px", maxWidth: 1200, margin: "0 auto" }}>
+        <div className="cta-banner" style={{
           borderRadius: 36,
           background: "#1A1A18",
-          padding: "72px 48px",
+          padding: "clamp(40px, 7vw, 72px) clamp(24px, 5vw, 48px)",
           textAlign: "center",
           position: "relative",
           overflow: "hidden",

@@ -292,3 +292,12 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ── Mobile bottom nav safe padding ── */
+/* Prevents content from being obscured by the sticky bottom nav on mobile */
+@media (max-width: 1023px) {
+  main {
+    padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}
+
