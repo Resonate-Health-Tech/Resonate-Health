@@ -140,3 +140,49 @@ class InterventionRequest(BaseModel):
     gender: str | None = None
     age: int | None = None
     memoryContext: dict  # Built by MemoryContextBuilder on the server
+
+
+# --- Insights Models ---
+
+class InsightsRequest(BaseModel):
+    """Request model for AI insights generation."""
+    userId: str
+    gender: str | None = None
+    age: int | None = None
+    memoryContext: dict  # Built by MemoryContextBuilder on the server
+
+
+# --- Dashboard Analysis Models ---
+
+class DashboardAnalysisRequest(BaseModel):
+    """Request model for AI-powered dashboard health analysis."""
+    userId: str
+    gender: str | None = None
+    age: int | None = None
+    # Biomarkers: { markerName: { value, unit, status, referenceRange } }
+    biomarkers: dict = {}
+    # Sleep: list of { date, sleepHours } for last 7 days
+    sleepHistory: list = []
+    # Workouts: list of { title, focus, durationMinutes, rpe, status, motivationLevel }
+    recentWorkouts: list = []
+    # Daily logs: list of { date, energyLevel, stressLevel, sleepQuality, mood }
+    dailyLogs: list = []
+    # Nutrition: { avgDailyCalories, avgDailyProteinG, trackingAdherencePct }
+    nutritionSummary: dict = {}
+
+
+# --- Intervention Effectiveness Models ---
+
+class InterventionEffectivenessRequest(BaseModel):
+    """Request model for AI intervention effectiveness analysis."""
+    interventionId: str
+    type: str
+    recommendation: str
+    rationale: str | None = None
+    targetMetric: str | None = None
+    targetValue: float | None = None
+    durationDays: int | None = None
+    startDate: str | None = None
+    # outcomes: list of { date, metricValue, notes }
+    outcomes: list = []
+    status: str = "active"

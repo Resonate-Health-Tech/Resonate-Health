@@ -492,3 +492,306 @@ Suggest the most impactful health interventions for this user based on the above
         temperature=settings.TEMPERATURE_CREATIVE
     )
 
+
+# --- Insights Generation ---
+
+INSIGHTS_SYSTEM_PROMPT = """
+You are an expert health coach AI. Analyze the user's health data and generate personalised, actionable health insights.
+
+Based on the memory context provided (numeric trends, recent events, key facts), generate 3–5 insights.
+
+Return JSON ONLY with this exact structure:
+{
+  "insights": [
+    {
+      "type": "critical | warning | action | suggestion | positive",
+      "title": "Short, punchy insight title (5 words max)",
+      "description": "2-3 sentence personalised explanation using the user's actual data points (e.g. their specific scores). Tell them what is happening and why it matters.",
+      "evidence": ["List of specific data points from the context that support this insight"],
+      "suggested_intervention": "short_snake_case_action_key"
+    }
+  ]
+}
+
+STRICT RULES:
+1. ONLY surface insights that are directly supported by data in the context. Do NOT hallucinate conditions.
+2. If a field in trends is null or missing, do NOT mention it or invent a value.
+3. Use the user's actual numeric values in the description (e.g. "Your energy is 4/10" not "Your energy is low").
+4. Prioritise by urgency: critical burnout signals first, then warnings, then suggestions, then positives.
+5. If the user has no logged data (all trends are empty), return exactly 1 insight of type "suggestion" prompting them to start logging daily check-ins.
+6. Return valid JSON only. No markdown, no text outside the JSON object.
+7. Maximum 5 insights, minimum 1.
+"""
+
+
+async def generate_insights(memory_context: dict, gender: str = None, age: int = None) -> dict:
+    """
+    Generate personalised health insights based on user memory context.
+
+    Args:
+        memory_context: Structured context from MemoryContextBuilder (trends, recent_events, key_facts)
+        gender: User's gender (optional, for personalisation)
+        age: User's age (optional, for personalisation)
+
+    Returns:
+        Dict with 'insights' list — each insight has type, title, description, evidence, suggested_intervention
+    """
+    profile_lines = []
+    if gender:
+        profile_lines.append(f"Gender: {gender}")
+    if age:
+        profile_lines.append(f"Age: {age}")
+
+    profile_section = "\n".join(profile_lines) if profile_lines else "Not provided"
+
+    # Format numeric trends clearly for the AI
+    trends = memory_context.get("trends", {})
+    trend_lines = []
+    for key, value in trends.items():
+        if value is not None:
+            trend_lines.append(f"- {key}: {value}")
+    trends_section = "\n".join(trend_lines) if trend_lines else "No numeric trend data available"
+
+    key_facts = "\n".join([f"- {f}" for f in memory_context.get("key_facts", [])])
+    recent_events = "\n".join([f"- {e}" for e in memory_context.get("recent_events", [])])
+    active = "\n".join([f"- {i}" for i in memory_context.get("active_interventions", [])])
+
+    user_prompt = f"""User Profile:
+{profile_section}
+
+Numeric Health Trends (these are averages from recent logs):
+{trends_section}
+
+Key Health Facts:
+{key_facts or "None available"}
+
+Recent Memory Events (last 7-14 days):
+{recent_events or "None available"}
+
+Active Interventions (already in progress — do not re-suggest):
+{active or "None"}
+
+Generate personalised health insights for this user based on the above data."""
+
+    return await call_chat_api(
+        INSIGHTS_SYSTEM_PROMPT,
+        user_prompt,
+        temperature=settings.TEMPERATURE_ANALYSIS
+    )
+
+
+# --- Dashboard Health Analysis ---
+
+DASHBOARD_ANALYSIS_PROMPT = """
+You are an expert health data scientist. Analyse the user's health data and return a comprehensive dashboard analysis.
+
+Return JSON ONLY with this exact structure:
+{
+  "healthScore": 0,
+  "healthScoreBreakdown": "2-3 sentence explanation of the score using the user's actual data values",
+  "recoveryStatus": "Optimal | Good | Moderate | Low | Critical",
+  "recoveryNarrative": "1-2 sentences on recovery quality using specific data",
+  "trainingBalance": {
+    "aerobic": 0,
+    "anaerobic": 0,
+    "rest": 10,
+    "classification_notes": "brief note on how workouts were classified"
+  },
+  "weeklyNarrative": "3-4 sentence personalised weekly summary covering the most important trends from the data"
+}
+
+RULES FOR healthScore (0-100):
+- Biomarkers in normal range → positive, flagged/abnormal → negative impact
+- Energy levels (0-10 scale): avg >= 7 good, <= 4 poor
+- Stress levels (0-10): avg <= 4 good, >= 7 poor
+- Sleep quality + duration both contribute
+- Nutrition adherence adds up to +10 points
+- Be realistic. 60-75 is a healthy active person. Only give 90+ for outstanding data.
+
+RULES FOR trainingBalance:
+- Look at workout titles, focus areas, RPE, and duration — NOT motivationLevel
+- Aerobic: cardio, running, cycling, low-RPE (< 6), endurance focus
+- Anaerobic: strength, HIIT, heavy lifting, high-RPE (>= 7), power focus
+- Rest: active recovery, stretching, yoga, mobility, or any rest days
+- Percentages must sum to 100
+
+RULES FOR weeklyNarrative:
+- Use actual numbers from the data (don't say "low energy" — say "energy averaged 4/10")
+- Highlight the most important trend (positive or negative)
+- Be direct and actionable
+
+Return valid JSON only. No markdown. No text outside the JSON.
+"""
+
+
+async def analyze_dashboard(
+    biomarkers: dict,
+    sleep_history: list,
+    recent_workouts: list,
+    daily_logs: list,
+    nutrition_summary: dict,
+    gender: str = None,
+    age: int = None
+) -> dict:
+    """
+    Generate AI-powered dashboard health analysis.
+
+    Replaces the manual formula: healthScore = biomarkers * 0.7 + sleep * 0.3
+    Also replaces motivationLevel-based training balance and hardcoded recovery thresholds.
+
+    Returns healthScore, healthScoreBreakdown, recoveryStatus, recoveryNarrative,
+    trainingBalance (aerobic/anaerobic/rest %) and weeklyNarrative.
+    """
+    profile_lines = []
+    if gender:
+        profile_lines.append(f"Gender: {gender}")
+    if age:
+        profile_lines.append(f"Age: {age}")
+    profile_section = "\n".join(profile_lines) if profile_lines else "Not provided"
+
+    # Summarise biomarkers
+    if biomarkers:
+        normal = [k for k, v in biomarkers.items() if isinstance(v, dict) and v.get("status") == "normal"]
+        flagged = [k for k, v in biomarkers.items() if isinstance(v, dict) and v.get("status") in ("high", "low")]
+        critical = [k for k, v in biomarkers.items() if isinstance(v, dict) and v.get("status") == "critical"]
+        bio_section = f"Biomarkers: {len(normal)} normal, {len(flagged)} flagged (high/low), {len(critical)} critical\n"
+        if flagged:
+            bio_section += f"  Flagged markers: {', '.join(flagged[:5])}\n"
+        if critical:
+            bio_section += f"  Critical markers: {', '.join(critical[:5])}\n"
+    else:
+        bio_section = "Biomarkers: No blood test data available\n"
+
+    # Summarise sleep
+    if sleep_history:
+        sleep_vals = [d.get("sleepHours", 0) for d in sleep_history if d.get("sleepHours")]
+        avg_sleep = round(sum(sleep_vals) / len(sleep_vals), 1) if sleep_vals else 0
+        sleep_section = f"Sleep: avg {avg_sleep}h/night over last {len(sleep_history)} days\n"
+    else:
+        sleep_section = "Sleep: No sleep data\n"
+
+    # Summarise workouts
+    if recent_workouts:
+        titles = [w.get("title") or w.get("focus") or "Unknown" for w in recent_workouts[:10]]
+        rpes = [w.get("rpe") for w in recent_workouts if w.get("rpe")]
+        avg_rpe = round(sum(rpes) / len(rpes), 1) if rpes else None
+        workout_section = f"Workouts (last 7 days): {len(recent_workouts)} sessions\n"
+        workout_section += f"  Workout titles/focus: {', '.join(titles[:8])}\n"
+        if avg_rpe:
+            workout_section += f"  Average RPE: {avg_rpe}/10\n"
+    else:
+        workout_section = "Workouts: No workout data\n"
+
+    # Summarise daily logs
+    if daily_logs:
+        energies = [d.get("energyLevel") for d in daily_logs if d.get("energyLevel") is not None]
+        stresses = [d.get("stressLevel") for d in daily_logs if d.get("stressLevel") is not None]
+        sleepqs = [d.get("sleepQuality") for d in daily_logs if d.get("sleepQuality") is not None]
+        avg_energy = round(sum(energies) / len(energies), 1) if energies else None
+        avg_stress = round(sum(stresses) / len(stresses), 1) if stresses else None
+        avg_sleepq = round(sum(sleepqs) / len(sleepqs), 1) if sleepqs else None
+        log_section = f"Daily Logs ({len(daily_logs)} entries):\n"
+        if avg_energy is not None:
+            log_section += f"  Avg energy: {avg_energy}/10\n"
+        if avg_stress is not None:
+            log_section += f"  Avg stress: {avg_stress}/10\n"
+        if avg_sleepq is not None:
+            log_section += f"  Avg sleep quality: {avg_sleepq}/10\n"
+    else:
+        log_section = "Daily Logs: No check-in data\n"
+
+    # Summarise nutrition
+    if nutrition_summary:
+        nut_section = f"Nutrition: {nutrition_summary.get('avgDailyCalories', 'N/A')} kcal/day, "
+        nut_section += f"{nutrition_summary.get('avgDailyProteinG', 'N/A')}g protein/day, "
+        nut_section += f"{nutrition_summary.get('trackingAdherencePct', 'N/A')}% tracking adherence\n"
+    else:
+        nut_section = "Nutrition: No food log data\n"
+
+    user_prompt = f"""User Profile:
+{profile_section}
+
+Health Data Summary:
+{bio_section}{sleep_section}{workout_section}{log_section}{nut_section}
+Analyse all of this data and return the dashboard health analysis JSON."""
+
+    return await call_chat_api(
+        DASHBOARD_ANALYSIS_PROMPT,
+        user_prompt,
+        temperature=settings.TEMPERATURE_ANALYSIS
+    )
+
+
+# --- Intervention Effectiveness Analysis ---
+
+INTERVENTION_ANALYSIS_PROMPT = """
+You are an expert health coach analysing the effectiveness of a health intervention.
+
+Based on the intervention details and outcome history provided, return a JSON analysis.
+
+Return JSON ONLY with this exact structure:
+{
+  "effective": true | false,
+  "effectivenessScore": 0,
+  "summary": "2-3 sentence verdict: did it work, what changed, what does the trend show",
+  "trend": "improving | stable | declining | insufficient_data",
+  "recommendation": "1-2 sentences on what to do next: continue, modify, stop, or escalate"
+}
+
+RULES:
+- effectivenessScore: 0-100. 0 = complete failure, 50 = partial, 100 = fully achieved goal
+- If targetValue is provided, compare actual outcome values to it
+- If no targetValue, judge directional improvement from the outcome notes/values
+- If fewer than 2 outcomes exist, set trend to "insufficient_data" and effectivenessScore to null
+- effective = true only if effectivenessScore >= 60
+- Return valid JSON only. No markdown.
+"""
+
+
+async def analyze_intervention(
+    intervention_type: str,
+    recommendation: str,
+    rationale: str = None,
+    target_metric: str = None,
+    target_value: float = None,
+    duration_days: int = None,
+    start_date: str = None,
+    outcomes: list = None,
+    status: str = "active"
+) -> dict:
+    """
+    AI analysis of whether a health intervention worked.
+
+    Replaces the stub analyzeEffectiveness() that returned raw numbers
+    with no interpretation. Now returns effective (bool), score, trend, and narrative.
+    """
+    outcomes = outcomes or []
+
+    outcome_lines = []
+    for i, o in enumerate(outcomes):
+        date = o.get("date", f"Entry {i+1}")
+        value = o.get("metricValue", "N/A")
+        notes = o.get("notes", "")
+        outcome_lines.append(f"  - {date}: value={value}{', notes: ' + notes if notes else ''}")
+
+    outcomes_section = "\n".join(outcome_lines) if outcome_lines else "  No outcomes recorded yet."
+
+    user_prompt = f"""Intervention Type: {intervention_type}
+Recommendation: {recommendation}
+Rationale: {rationale or 'Not specified'}
+Target Metric: {target_metric or 'Not specified'}
+Target Value: {target_value if target_value is not None else 'Not specified'}
+Duration: {duration_days or 'Not specified'} days
+Start Date: {start_date or 'Not specified'}
+Current Status: {status}
+
+Outcome History:
+{outcomes_section}
+
+Analyse whether this intervention was effective and return the JSON analysis."""
+
+    return await call_chat_api(
+        INTERVENTION_ANALYSIS_PROMPT,
+        user_prompt,
+        temperature=settings.TEMPERATURE_ANALYSIS
+    )

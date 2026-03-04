@@ -1,5 +1,6 @@
 import { Intervention } from '../models/Intervention.js';
 import { MemoryService } from './memory.service.js';
+import axios from 'axios';
 
 /** Truncate user-supplied strings to prevent oversized Mem0 payloads */
 const trunc = (str, max = 500) =>
@@ -122,28 +123,73 @@ export class InterventionService {
     }
 
     /**
-     * Analyze effectiveness of an intervention
+     * Analyze effectiveness of an intervention using AI
      * @param {string} interventionId 
      */
     async analyzeEffectiveness(interventionId) {
-        // Placeholder for more complex analysis
-        const intervention = await Intervention.findById(interventionId);
-        if (!intervention) return null;
+        try {
+            const intervention = await Intervention.findById(interventionId);
+            if (!intervention) return null;
 
-        // Simple comparison of latest outcome vs target
-        const latestOutcome = intervention.outcomes[intervention.outcomes.length - 1];
-        if (!latestOutcome) return { effective: false, reason: 'No outcomes recorded' };
+            // AI Needs at least some outcomes to judge effectively, 
+            // but we can still ask it even with 0 if we want a baseline judgement.
+            const latestOutcome = intervention.outcomes[intervention.outcomes.length - 1];
+            if (!latestOutcome) return { effective: false, reason: 'No outcomes recorded' };
 
-        // This logic is simplistic and assumes higher is better or exact match. 
-        // Real logic would depend on the metric type (e.g. lower RPE is better, higher sleep is better).
-        // For now, returning the raw data for the client/caller to decide.
+            const microserviceUrl = process.env.MICROSERVICE_URL || 'http://127.0.0.1:10000';
+            const internalSecret = process.env.INTERNAL_API_SECRET;
 
-        return {
-            interventionId,
-            target: intervention.targetValue,
-            actual: latestOutcome.metricValue,
-            notes: latestOutcome.notes
-        };
+            // Call AI microservice
+            const response = await axios.post(
+                `${microserviceUrl}/analyze-intervention`,
+                {
+                    interventionId: intervention._id.toString(),
+                    type: intervention.type,
+                    recommendation: intervention.recommendation,
+                    rationale: intervention.rationale,
+                    targetMetric: intervention.targetMetric,
+                    targetValue: intervention.targetValue,
+                    durationDays: intervention.durationDays,
+                    startDate: intervention.startDate.toISOString(),
+                    status: intervention.status,
+                    outcomes: intervention.outcomes.map(o => ({
+                        date: o.date.toISOString(),
+                        metricValue: o.metricValue,
+                        notes: o.notes
+                    }))
+                },
+                {
+                    headers: { 'x-internal-secret': internalSecret, 'Content-Type': 'application/json' },
+                    timeout: 20000
+                }
+            );
+
+            const aiAnalysis = response.data?.effectiveness;
+            if (aiAnalysis) {
+                return {
+                    interventionId,
+                    target: intervention.targetValue,
+                    actual: latestOutcome.metricValue,
+                    ...aiAnalysis // effective, effectivenessScore, summary, trend, recommendation
+                };
+            }
+
+            throw new Error("AI returned empty analysis");
+
+        } catch (error) {
+            console.warn('AI intervention analysis failed, using fallback logic:', error.message);
+
+            // Fallback: simplistic raw data return
+            const intervention = await Intervention.findById(interventionId);
+            const latestOutcome = intervention.outcomes[intervention.outcomes.length - 1];
+            return {
+                interventionId,
+                target: intervention.targetValue,
+                actual: latestOutcome.metricValue,
+                notes: latestOutcome.notes,
+                fallback: true
+            };
+        }
     }
 
     /**

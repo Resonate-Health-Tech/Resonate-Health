@@ -94,11 +94,14 @@ export class MemoryContextBuilder {
 
             // Extract facts (simplified for now, ideally would process metadata)
             const recentRPE = trainingLogs.results
-                .map(r => r.metadata?.module_specific?.rpe)
+                .map(r => {
+                    const md = typeof r.metadata === 'string' ? JSON.parse(r.metadata) : r.metadata;
+                    return md?.module_specific?.rpe;
+                })
                 .filter(Boolean);
 
             if (recentRPE.length) {
-                const avgRpe = recentRPE.reduce((a, b) => a + b, 0) / recentRPE.length;
+                const avgRpe = recentRPE.reduce((a, b) => a + Number(b), 0) / recentRPE.length;
                 context.trends.avg_workout_intensity = Math.round(avgRpe * 10) / 10;
             }
         } else {
@@ -111,7 +114,10 @@ export class MemoryContextBuilder {
 
             // Simple trend detection
             const sleepHours = recoveryData.results
-                .map(r => r.metadata?.module_specific?.hours)
+                .map(r => {
+                    const md = typeof r.metadata === 'string' ? JSON.parse(r.metadata) : r.metadata;
+                    return md?.module_specific?.sleep_hours;
+                })
                 .filter(Boolean);
 
             if (sleepHours.length) {
@@ -134,11 +140,14 @@ export class MemoryContextBuilder {
             context.key_facts.push(...stressData.results.map(r => `Stress: ${r.memory}`));
 
             const stressScores = stressData.results
-                .map(r => r.metadata?.module_specific?.stress_score)
-                .filter(s => typeof s === 'number');
+                .map(r => {
+                    const md = typeof r.metadata === 'string' ? JSON.parse(r.metadata) : r.metadata;
+                    return md?.module_specific?.stress_score;
+                })
+                .filter(s => s !== undefined && s !== null);
 
             if (stressScores.length) {
-                const avgStress = stressScores.reduce((a, b) => a + b, 0) / stressScores.length;
+                const avgStress = stressScores.reduce((a, b) => a + Number(b), 0) / stressScores.length;
                 context.trends.avg_stress_score = Math.round(avgStress * 10) / 10;
             }
         }
@@ -307,8 +316,11 @@ export class MemoryContextBuilder {
             context.recent_events.push(...sleepLogs.results.map(r => r.memory));
 
             const sleepHours = sleepLogs.results
-                .map(r => r.metadata?.module_specific?.hours)
-                .filter(h => typeof h === 'number');
+                .map(r => {
+                    const md = typeof r.metadata === 'string' ? JSON.parse(r.metadata) : r.metadata;
+                    return md?.module_specific?.sleep_hours;
+                })
+                .filter(h => h !== undefined && h !== null);
 
             if (sleepHours.length) {
                 const avgSleep = sleepHours.reduce((a, b) => a + b, 0) / sleepHours.length;
@@ -322,11 +334,14 @@ export class MemoryContextBuilder {
             context.recent_events.push(...workoutLogs.results.map(r => r.memory));
 
             const rpeValues = workoutLogs.results
-                .map(r => r.metadata?.module_specific?.rpe)
-                .filter(r => typeof r === 'number');
+                .map(r => {
+                    const md = typeof r.metadata === 'string' ? JSON.parse(r.metadata) : r.metadata;
+                    return md?.module_specific?.rpe;
+                })
+                .filter(r => r !== undefined && r !== null);
 
             if (rpeValues.length) {
-                const avgRpe = rpeValues.reduce((a, b) => a + b, 0) / rpeValues.length;
+                const avgRpe = rpeValues.reduce((a, b) => a + Number(b), 0) / rpeValues.length;
                 context.trends.avg_workout_intensity = parseFloat(avgRpe.toFixed(1));
                 context.trends.workout_count_last_7d = rpeValues.length;
             }
@@ -359,6 +374,44 @@ export class MemoryContextBuilder {
             const weight = latest.metadata?.module_specific?.weight_kg ||
                 latest.metadata?.module_specific?.weight;
             if (weight) context.trends.current_weight_kg = weight;
+        }
+
+        // 7. Fetch recent daily logs — this is the primary source of user-reported data
+        const dailyLogs = await this.memoryService.searchMemory(userId, 'daily log energy stress sleep quality', {
+            category: 'recovery.daily_log'
+        }, 10);
+
+        if (dailyLogs.results.length > 0) {
+            // Extract numeric metrics from daily log metadata
+            const energyLevels = [];
+            const stressLevels = [];
+            const sleepQualityScores = [];
+            const waterIntakes = [];
+
+            for (const r of dailyLogs.results) {
+                const md = typeof r.metadata === 'string' ? JSON.parse(r.metadata) : r.metadata;
+                const ms = md?.module_specific;
+                if (!ms) continue;
+
+                if (ms.energy_level !== undefined && ms.energy_level !== null) energyLevels.push(Number(ms.energy_level));
+                if (ms.stress_level !== undefined && ms.stress_level !== null) stressLevels.push(Number(ms.stress_level));
+                if (ms.sleep_quality !== undefined && ms.sleep_quality !== null) sleepQualityScores.push(Number(ms.sleep_quality));
+                if (ms.water_liters !== undefined && ms.water_liters !== null) waterIntakes.push(Number(ms.water_liters));
+            }
+
+            if (energyLevels.length > 0) {
+                context.trends.avg_energy_level = parseFloat((energyLevels.reduce((a, b) => a + b, 0) / energyLevels.length).toFixed(1));
+            }
+            if (stressLevels.length > 0) {
+                context.trends.avg_stress_level = parseFloat((stressLevels.reduce((a, b) => a + b, 0) / stressLevels.length).toFixed(1));
+            }
+            if (sleepQualityScores.length > 0) {
+                context.trends.avg_sleep_quality = parseFloat((sleepQualityScores.reduce((a, b) => a + b, 0) / sleepQualityScores.length).toFixed(1));
+            }
+            if (waterIntakes.length > 0) {
+                context.trends.avg_water_liters = parseFloat((waterIntakes.reduce((a, b) => a + b, 0) / waterIntakes.length).toFixed(2));
+            }
+            context.trends.daily_log_count = dailyLogs.results.length;
         }
 
         // Outcomes & Interventions

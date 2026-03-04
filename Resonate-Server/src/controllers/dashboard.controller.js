@@ -2,6 +2,9 @@ import { Diagnostics } from "../models/Diagnostics.js";
 import { FitnessData } from "../models/FitnessData.js";
 import Workout from "../models/Workout.js";
 import { FoodLog } from "../models/FoodLog.js";
+import { DailyLog } from "../models/DailyLog.js";
+import { User } from "../models/User.js";
+import { dashboardAIService } from "../services/dashboard.ai.service.js";
 import { isAuthenticated } from "../middlewares/isAuthenticated.js";
 
 /**
@@ -36,12 +39,10 @@ export const getDashboardSummary = async (req, res) => {
                 .select("nutritionalInfo date"),
         ]);
 
-        // ── Health Score ─────────────────────────────────────────────────────
-        let healthScore = null;
+        // ── Diagnostics Meta (for header) ────────────────────────────────────
         let diagnosticsMeta = { score: null, flaggedCount: 0, dots: [], lastUpdated: null };
 
         if (latestDiag?.biomarkers) {
-            // Filter out null / non-object entries — some marker keys are stored as null
             const markers = Object.values(latestDiag.biomarkers).filter(m => m && typeof m === "object");
             const total = markers.length;
             const normal = markers.filter(m => m.status === "normal").length;
@@ -50,50 +51,23 @@ export const getDashboardSummary = async (req, res) => {
             const critical = markers.filter(m => m.status === "critical").length;
             const flagged = high + low + critical;
 
-            const bioScore = total > 0 ? Math.round((normal / total) * 100) : null;
-
-            // Sleep score, capped at 100
-            const sleepHours = fitnessData?.sleepHistory?.slice(-1)[0]?.sleepHours || 0;
-            const sleepScore = Math.min(Math.round((sleepHours / 9) * 100), 100);
-
-            // Composite health score: 70% bio, 30% sleep
-            healthScore = bioScore !== null
-                ? Math.round(bioScore * 0.7 + sleepScore * 0.3)
-                : null;
-
-            // Status dots: green = normal, amber = high/low, red = critical
-            const dots = [
-                ...Array(normal).fill("normal"),
-                ...Array(high + low).fill("flagged"),
-                ...Array(critical).fill("critical"),
-            ].slice(0, 8); // cap at 8 dots for display
-
             diagnosticsMeta = {
-                score: bioScore,
+                score: total > 0 ? Math.round((normal / total) * 100) : null,
                 flaggedCount: flagged,
-                dots,
+                dots: [
+                    ...Array(normal).fill("normal"),
+                    ...Array(high + low).fill("flagged"),
+                    ...Array(critical).fill("critical"),
+                ].slice(0, 8),
                 lastUpdated: latestDiag.createdAt,
             };
         }
 
-        // ── Training Balance ─────────────────────────────────────────────────
+        // ── Recent Activity & Stats (for display) ─────────────────────────────
         const recentWorkouts = workoutsRaw.filter(w => new Date(w.createdAt) >= sevenDaysAgo);
         const completedThisWeek = recentWorkouts.filter(w => w.status === "completed").length;
         const totalThisWeek = recentWorkouts.length;
 
-        // Classify by motivationLevel: high → Anaerobic, low → Rest/Recovery, else → Aerobic
-        const anaerobic = recentWorkouts.filter(w => w.inputs?.motivationLevel === "high").length;
-        const rest = recentWorkouts.filter(w => w.inputs?.motivationLevel === "low").length;
-        const aerobic = totalThisWeek - anaerobic - rest;
-        const tb = totalThisWeek > 0
-            ? {
-                aerobic: Math.round((aerobic / totalThisWeek) * 100),
-                anaerobic: Math.round((anaerobic / totalThisWeek) * 100),
-                rest: Math.round((rest / totalThisWeek) * 100),
-            }
-            : null; // null = no data yet
-
-        // ── Recent Activity (merge AI workouts + Google Fit workouts) ─────────
         const aiActivities = workoutsRaw.slice(0, 5).map(w => ({
             source: "ai",
             title: w.plan?.title || "AI Workout",
@@ -124,22 +98,14 @@ export const getDashboardSummary = async (req, res) => {
             .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
             .slice(0, 5);
 
-        // ── Weekly Summary ────────────────────────────────────────────────────
         const sleepThisWeek = (fitnessData?.sleepHistory || []).slice(-7);
         const avgSleep = sleepThisWeek.length
             ? (sleepThisWeek.reduce((s, d) => s + d.sleepHours, 0) / sleepThisWeek.length).toFixed(1)
             : null;
 
-        // Recovery status derived from health score
-        let recoveryStatus = null;
-        if (healthScore !== null) {
-            recoveryStatus = healthScore >= 80 ? "Optimal" : healthScore >= 60 ? "Good" : "Low";
-        }
-
-        // ── Nutrition Summary (last 7 days of food logs) ──────────────────────
+        // ── Nutritional Summary (manual pre-calc for AI & frontend) ────────
         let nutritionSummary = null;
         if (recentFoodLogs && recentFoodLogs.length > 0) {
-            // Group by day to compute per-day averages and tracking adherence
             const daySet = new Set(recentFoodLogs.map(l => new Date(l.date).toISOString().split('T')[0]));
             const daysTracked = daySet.size;
 
@@ -164,15 +130,66 @@ export const getDashboardSummary = async (req, res) => {
             };
         }
 
+        // ── AI Dashboard Analysis ────────────────────────────────────────────
+
+        // 1. Fetch remaining data needed for AI context
+        const [dailyLogs, user] = await Promise.all([
+            DailyLog.find({ user: userId, date: { $gte: sevenDaysAgo } }).select("date energyLevel stressLevel sleepQuality mood"),
+            User.findById(userId).select("age gender")
+        ]);
+
+        const userProfile = { age: user?.age, gender: user?.gender };
+
+        const rawData = {
+            biomarkers: latestDiag?.biomarkers || {},
+            sleepHistory: (fitnessData?.sleepHistory || []).slice(-7),
+            recentWorkouts: recentWorkouts,
+            dailyLogs: dailyLogs,
+            nutritionSummary: nutritionSummary || {}
+        };
+
+        // 2. Get AI Analysis (cached for 24h)
+        const aiAnalysis = await dashboardAIService.getOrGenerate(userId, rawData, userProfile);
+
+        // 3. Fallback logic if AI fails
+        let healthScore = null;
+        let recoveryStatus = null;
+        let trainingBalance = null;
+
+        if (aiAnalysis && aiAnalysis.healthScore !== null) {
+            healthScore = aiAnalysis.healthScore;
+            recoveryStatus = aiAnalysis.recoveryStatus;
+            trainingBalance = aiAnalysis.trainingBalance;
+        } else {
+            // Manual fallback
+            const markers = Object.values(latestDiag?.biomarkers || {}).filter(m => m && typeof m === "object");
+            const total = markers.length;
+            const normal = markers.filter(m => m.status === "normal").length;
+            const bioScore = total > 0 ? Math.round((normal / total) * 100) : null;
+            const sleepHours = fitnessData?.sleepHistory?.slice(-1)[0]?.sleepHours || 0;
+            const sleepScore = Math.min(Math.round((sleepHours / 9) * 100), 100);
+            healthScore = bioScore !== null ? Math.round(bioScore * 0.7 + sleepScore * 0.3) : null;
+            if (healthScore !== null) {
+                recoveryStatus = healthScore >= 80 ? "Optimal" : healthScore >= 60 ? "Good" : "Low";
+            }
+        }
+
         res.json({
+            // AI Fields
             healthScore,
+            healthScoreBreakdown: aiAnalysis?.healthScoreBreakdown || null,
+            recoveryStatus,
+            recoveryNarrative: aiAnalysis?.recoveryNarrative || null,
+            trainingBalance,
+            weeklyNarrative: aiAnalysis?.weeklyNarrative || null,
+            aiCacheHit: aiAnalysis?.cacheHit || false,
+
+            // Original Fields
             diagnosticsMeta,
-            trainingBalance: tb,
             completedWorkoutsThisWeek: completedThisWeek,
             totalWorkoutsThisWeek: totalThisWeek,
             recentActivity,
             avgSleepThisWeek: avgSleep,
-            recoveryStatus,
             nutritionSummary,
         });
 

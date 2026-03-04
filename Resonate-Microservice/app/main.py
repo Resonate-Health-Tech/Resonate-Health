@@ -13,7 +13,7 @@ from slowapi.errors import RateLimitExceeded
 from app.core.config import settings
 from app.core.logger import logger
 from app.core.limiter import limiter
-from app.routes import parser, workout, nutrition, intervention
+from app.routes import parser, workout, nutrition, intervention, insights, dashboard_ai, intervention_ai
 
 
 # Validate configuration on startup
@@ -64,6 +64,9 @@ app.include_router(parser.router, tags=["Parser"])
 app.include_router(workout.router, tags=["Workout"])
 app.include_router(nutrition.router, tags=["Nutrition"])
 app.include_router(intervention.router, tags=["Intervention"])
+app.include_router(insights.router, tags=["Insights"])
+app.include_router(dashboard_ai.router, tags=["Dashboard"])
+app.include_router(intervention_ai.router, tags=["Intervention AI"])
 
 
 @app.get("/")

@@ -4,30 +4,39 @@
  * Focus: Workouts, Intensity, Soreness, Performance
  */
 
-// Rule 5: High Soreness + Planned High Intensity
+// Rule 5: High Intensity + Low Energy (replaces keyword-matching soreness check)
 export const checkSorenessAndIntensity = (context) => {
-    // Check for recent soreness
-    const sorenessEvents = context.recent_events.filter(e =>
-        e.toLowerCase().includes('sore') ||
-        (e.toLowerCase().includes('muscle pain') && !e.toLowerCase().includes('injury'))
-    );
+    const { avg_workout_intensity, avg_energy_level } = context.trends;
 
-    // If we have soreness and high intensity trend, warn
-    if (sorenessEvents.length > 0 && context.trends.avg_workout_intensity >= 8) {
+    // Fire when training hard but energy is low — strong signal of overreaching
+    if (avg_workout_intensity != null && avg_workout_intensity >= 8) {
+        if (avg_energy_level != null && avg_energy_level <= 5) {
+            return {
+                type: 'warning',
+                title: 'High Intensity with Low Energy',
+                description: `You've been training at high intensity (avg RPE ${avg_workout_intensity}) while reporting low energy levels (${avg_energy_level}/10). This combination can lead to overtraining. Consider a deload or active recovery session.`,
+                evidence: [
+                    `Avg workout intensity: RPE ${avg_workout_intensity}`,
+                    `Avg energy level: ${avg_energy_level}/10`
+                ],
+                suggested_intervention: 'active_recovery_session'
+            };
+        }
+
+        // High intensity alone is worth noting
         return {
-            type: 'warning',
-            title: 'High Intensity with Soreness',
-            message: 'You are reporting soreness while maintaining high training intensity (RPE 8+). Consider a lighter session or active recovery.',
-            evidence: sorenessEvents,
-            suggested_intervention: 'active_recovery_session'
+            type: 'suggestion',
+            title: 'Sustained High Training Load',
+            description: `Your average workout intensity has been RPE ${avg_workout_intensity} recently. Make sure you are prioritising sleep and recovery to keep performing at this level.`,
+            evidence: [`Avg workout intensity: RPE ${avg_workout_intensity}`],
+            suggested_intervention: 'monitor_recovery'
         };
     }
     return null;
 };
 
-// Rule 8: Workout Skips Pattern (Motivation)
+// Rule 8: Workout Skips Pattern (Motivation) — keyword-based, kept as-is
 export const checkWorkoutSkips = (context) => {
-    // Look for memories about missed workouts
     const skippedEvents = context.recent_events.filter(e =>
         e.toLowerCase().includes('missed workout') ||
         e.toLowerCase().includes('skipped training') ||
@@ -38,7 +47,7 @@ export const checkWorkoutSkips = (context) => {
         return {
             type: 'suggestion',
             title: 'Workout Consistency',
-            message: 'You missed multiple workouts recently. Is the current schedule too demanding?',
+            description: 'You missed multiple workouts recently. Is the current schedule too demanding? Consider adjusting training frequency or volume.',
             evidence: skippedEvents,
             suggested_intervention: 'adjust_schedule'
         };
@@ -46,11 +55,10 @@ export const checkWorkoutSkips = (context) => {
     return null;
 };
 
-// Rule 13: Performance Improving
+// Rule 13: Performance Improving — kept as-is
 export const checkPerformanceImprovement = (context) => {
     const { avg_workout_intensity } = context.trends;
 
-    // Check for "PR" or "personal best" or "increased weight"
     const prEvents = context.recent_events.filter(e =>
         e.toLowerCase().includes('pr') ||
         e.toLowerCase().includes('personal best') ||
@@ -62,29 +70,28 @@ export const checkPerformanceImprovement = (context) => {
         return {
             type: 'positive',
             title: 'Performance Improving',
-            message: `Great job! You're hitting personal bests while maintaining intensity (Avg RPE ${avg_workout_intensity}).`,
+            description: `Great job! You're hitting personal bests${avg_workout_intensity ? ` while maintaining solid training intensity (Avg RPE ${avg_workout_intensity})` : ''}. Keep up the progressive overload.`,
             evidence: prEvents,
-            suggested_intervention: 'continue_progression' // Positive reinforcement
+            suggested_intervention: 'continue_progression'
         };
     }
     return null;
 };
 
-// Rule 9: Post-workout Recovery Poor
+// Rule 9: Post-workout Recovery Poor — uses avg_energy_level from trends
 export const checkPostWorkoutRecovery = (context) => {
-    // Look for "drained", "exhausted", "collapsed" after workout context
-    const exhaustedEvents = context.recent_events.filter(e =>
-        e.toLowerCase().includes('exhausted after workout') ||
-        e.toLowerCase().includes('drained') ||
-        e.toLowerCase().includes('dizzy')
-    );
+    const { avg_energy_level, avg_workout_intensity } = context.trends;
 
-    if (exhaustedEvents.length > 0) {
+    // If user logs workouts but energy is very low, flag post-workout recovery
+    if (avg_energy_level != null && avg_energy_level <= 3 && avg_workout_intensity != null) {
         return {
             type: 'warning',
-            title: 'Post-Workout Fatigue',
-            message: 'You reported extreme fatigue after recent workouts. Ensure you are consuming post-workout chords/protein.',
-            evidence: exhaustedEvents,
+            title: 'Post-Workout Fatigue Signal',
+            description: `Your energy levels (avg ${avg_energy_level}/10) are very low despite active training (RPE ${avg_workout_intensity}). Ensure you're fuelling adequately with post-workout nutrition and prioritising sleep.`,
+            evidence: [
+                `Avg energy level: ${avg_energy_level}/10`,
+                `Avg workout intensity: RPE ${avg_workout_intensity}`
+            ],
             suggested_intervention: 'post_workout_nutrition'
         };
     }

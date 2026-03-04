@@ -38,7 +38,8 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"], // Required for Swagger UI
+      // Only allow unsafe-inline in dev for Swagger UI
+      scriptSrc: ["'self'", process.env.NODE_ENV === "production" ? "" : "'unsafe-inline'"].filter(Boolean),
       styleSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", "data:", "https://res.cloudinary.com", "https://lh3.googleusercontent.com"],
       connectSrc: ["'self'", process.env.CLIENT_URL_1, process.env.CLIENT_URL_2, process.env.MICROSERVICE_URL].filter(Boolean),

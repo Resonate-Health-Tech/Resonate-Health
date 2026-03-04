@@ -1,0 +1,193 @@
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+Connected to MongoDB.
+Testing insights for user: HywWqeErcXYtXDGSmDjqVSzwdZj2 (gargakshat952@gmail.com)
+Building Context...
+[2026-03-04T15:17:42.874Z] [MEMORY] [INFO] [SEARCH_MEMORY] Search completed {"userId":"HywWqeErcXYtXDGSmDjqVSzwdZj2","resultCount":7}
+[2026-03-04T15:17:43.397Z] [MEMORY] [INFO] [SEARCH_MEMORY] Search completed {"userId":"HywWqeErcXYtXDGSmDjqVSzwdZj2","resultCount":7}
+[2026-03-04T15:17:51.891Z] [MEMORY] [INFO] [SEARCH_MEMORY] Search completed {"userId":"HywWqeErcXYtXDGSmDjqVSzwdZj2","resultCount":10}
+[2026-03-04T15:17:52.405Z] [MEMORY] [INFO] [SEARCH_MEMORY] Search completed {"userId":"HywWqeErcXYtXDGSmDjqVSzwdZj2","resultCount":1}
+[2026-03-04T15:17:52.928Z] [MEMORY] [INFO] [SEARCH_MEMORY] Search completed {"userId":"HywWqeErcXYtXDGSmDjqVSzwdZj2","resultCount":1}
+[2026-03-04T15:17:53.457Z] [MEMORY] [INFO] [SEARCH_MEMORY] Search completed {"userId":"HywWqeErcXYtXDGSmDjqVSzwdZj2","resultCount":5}
+[2026-03-04T15:17:53.968Z] [MEMORY] [INFO] [SEARCH_MEMORY] Search completed {"userId":"HywWqeErcXYtXDGSmDjqVSzwdZj2","resultCount":5}
+Memory Context Built:
+{
+  "intent": "insights",
+  "timestamp": "2026-03-04T15:17:40.609Z",
+  "key_facts": [
+    "Latest Blood Test: User's daily log on 2026-03-04 shows Energy 5/10, Stress 5/10, Sleep Quality 5/10.",
+    "Latest Body Comp: User's daily log on 2026-03-04 shows Energy 5/10, Stress 5/10, Sleep Quality 5/10."
+  ],
+  "recent_events": [
+    "User's daily log on 2026-03-04 shows Energy 5/10, Stress 5/10, Sleep Quality 5/10.",
+    "User's water intake on 2026-03-04 was 200ml (0.20L)",
+    "User had 0 steps, 0 hours of sleep, and 0 workouts on 2026-03-03",
+    "User's water intake on 2026-03-03 was 200ml (0.20L)",
+    "User's daily log on 2026-03-03 shows Energy 8/10, Stress 1/10, Sleep Quality 8/10",
+    "User had 0 steps, 0 hours of sleep, and 0 workouts on 2026-03-02",
+    "User's water intake on 2026-03-02 was 500ml (0.50L)",
+    "User's daily log on 2026-03-04 shows Energy 5/10, Stress 5/10, Sleep Quality 5/10.",
+    "User's water intake on 2026-03-04 was 200ml (0.20L)",
+    "User had 0 steps, 0 hours of sleep, and 0 workouts on 2026-03-03",
+    "User's water intake on 2026-03-03 was 200ml (0.20L)",
+    "User's daily log on 2026-03-03 shows Energy 8/10, Stress 1/10, Sleep Quality 8/10",
+    "User had 0 steps, 0 hours of sleep, and 0 workouts on 2026-03-02",
+    "User's water intake on 2026-03-02 was 500ml (0.50L)",
+    "User's daily log on 2026-03-04 shows Energy 5/10, Stress 5/10, Sleep Quality 5/10.",
+    "User's water intake on 2026-03-04 was 200ml (0.20L)",
+    "User had 0 steps, 0 hours of sleep, and 0 workouts on 2026-03-03",
+    "User's water intake on 2026-03-03 was 200ml (0.20L)",
+    "User's daily log on 2026-03-03 shows Energy 8/10, Stress 1/10, Sleep Quality 8/10"
+  ],
+  "intervention_history": [
+    "User's daily log on 2026-03-04 shows Energy 5/10, Stress 5/10, Sleep Quality 5/10.",
+    "User's water intake on 2026-03-04 was 200ml (0.20L)",
+    "User had 0 steps, 0 hours of sleep, and 0 workouts on 2026-03-03",
+    "User's water intake on 2026-03-03 was 200ml (0.20L)",
+    "User's daily log on 2026-03-03 shows Energy 8/10, Stress 1/10, Sleep Quality 8/10"
+  ],
+  "trends": {
+    "avg_sleep_hours": 0,
+    "sleep_log_count": 2,
+    "nutrition_adherence_percent": 0,
+    "latest_blood_test": {
+      "id": "fead1c9b-f639-4f1a-ad4f-bdc2855d22d4",
+      "memory": "User's daily log on 2026-03-04 shows Energy 5/10, Stress 5/10, Sleep Quality 5/10.",
+      "user_id": "HywWqeErcXYtXDGSmDjqVSzwdZj2",
+      "metadata": {
+        "tags": [],
+        "source": "user_input",
+        "category": "recovery.daily_log",
+        "timezone": "UTC",
+        "timestamp": "2026-03-04T15:05:38.605Z",
+        "confidence": 0.95,
+        "module_specific": {
+          "symptoms": [],
+          "energy_level": 5,
+          "stress_level": 5,
+          "sleep_quality": 5
+        }
+      },
+      "categories": [
+        "health"
+      ],
+      "created_at": "2026-03-04T07:05:48.055325-08:00",
+      "updated_at": "2026-03-04T07:05:48.059034-08:00",
+      "expiration_date": null,
+      "structured_attributes": {
+        "day": 4,
+        "hour": 15,
+        "year": 2026,
+        "month": 3,
+        "minute": 5,
+        "quarter": 1,
+        "is_weekend": false,
+        "day_of_week": "wednesday",
+        "day_of_year": 63,
+        "week_of_year": 10
+      },
+      "score": 0.45045652686820536
+    }
+  },
+  "active_interventions": [
+    {
+      "id": "fead1c9b-f639-4f1a-ad4f-bdc2855d22d4",
+      "text": "User's daily log on 2026-03-04 shows Energy 5/10, Stress 5/10, Sleep Quality 5/10.",
+      "metadata": {
+        "tags": [],
+        "source": "user_input",
+        "category": "recovery.daily_log",
+        "timezone": "UTC",
+        "timestamp": "2026-03-04T15:05:38.605Z",
+        "confidence": 0.95,
+        "module_specific": {
+          "symptoms": [],
+          "energy_level": 5,
+          "stress_level": 5,
+          "sleep_quality": 5
+        }
+      }
+    },
+    {
+      "id": "a7a54248-a998-4422-b8c8-b86a13dd23b1",
+      "text": "User's water intake on 2026-03-04 was 200ml (0.20L)",
+      "metadata": {
+        "tags": [],
+        "source": "user_input",
+        "category": "recovery.daily_log",
+        "timezone": "UTC",
+        "timestamp": "2026-03-04T15:05:17.263Z",
+        "confidence": 0.95,
+        "module_specific": {
+          "date": "2026-03-04",
+          "water_ml": 200,
+          "water_liters": 0.2
+        }
+      }
+    },
+    {
+      "id": "d59f9624-a0b9-4e87-a91e-26461a333fd0",
+      "text": "User had 0 steps, 0 hours of sleep, and 0 workouts on 2026-03-03",
+      "metadata": {
+        "tags": [],
+        "source": "device_sync",
+        "category": "fitness.daily_summary",
+        "timezone": "UTC",
+        "timestamp": "2026-03-03T23:55:05.445Z",
+        "confidence": 0.9,
+        "module_specific": {
+          "date": "2026-03-03",
+          "steps": 0,
+          "sleep_hours": 0,
+          "workout_count": 0
+        }
+      }
+    },
+    {
+      "id": "f341143d-ab01-46ae-ad34-61afcebb2f06",
+      "text": "User's water intake on 2026-03-03 was 200ml (0.20L)",
+      "metadata": {
+        "tags": [],
+        "source": "user_input",
+        "category": "recovery.daily_log",
+        "timezone": "UTC",
+        "timestamp": "2026-03-03T05:23:17.120Z",
+        "confidence": 0.95,
+        "module_specific": {
+          "date": "2026-03-03",
+          "water_ml": 200,
+          "water_liters": 0.2
+        }
+      }
+    },
+    {
+      "id": "49ecfbab-3c11-408c-b895-d4efff2e71f8",
+      "text": "User's daily log on 2026-03-03 shows Energy 8/10, Stress 1/10, Sleep Quality 8/10",
+      "metadata": {
+        "tags": [],
+        "source": "user_input",
+        "category": "recovery.daily_log",
+        "timezone": "UTC",
+        "timestamp": "2026-03-03T04:59:52.385Z",
+        "confidence": 0.95,
+        "module_specific": {
+          "symptoms": [],
+          "energy_level": 8,
+          "stress_level": 1,
+          "sleep_quality": 8
+        }
+      }
+    }
+  ]
+}
+
+Generating Insights...
+[2026-03-04T15:17:54.473Z] [MEMORY] [INFO] [SEARCH_MEMORY] Search completed {"userId":"HywWqeErcXYtXDGSmDjqVSzwdZj2","resultCount":7}
+[2026-03-04T15:17:54.978Z] [MEMORY] [INFO] [SEARCH_MEMORY] Search completed {"userId":"HywWqeErcXYtXDGSmDjqVSzwdZj2","resultCount":7}
+[2026-03-04T15:18:03.864Z] [MEMORY] [INFO] [SEARCH_MEMORY] Search completed {"userId":"HywWqeErcXYtXDGSmDjqVSzwdZj2","resultCount":10}
+[2026-03-04T15:18:04.422Z] [MEMORY] [INFO] [SEARCH_MEMORY] Search completed {"userId":"HywWqeErcXYtXDGSmDjqVSzwdZj2","resultCount":1}
+[2026-03-04T15:18:04.990Z] [MEMORY] [INFO] [SEARCH_MEMORY] Search completed {"userId":"HywWqeErcXYtXDGSmDjqVSzwdZj2","resultCount":1}
+[2026-03-04T15:18:05.509Z] [MEMORY] [INFO] [SEARCH_MEMORY] Search completed {"userId":"HywWqeErcXYtXDGSmDjqVSzwdZj2","resultCount":5}
+[2026-03-04T15:18:06.060Z] [MEMORY] [INFO] [SEARCH_MEMORY] Search completed {"userId":"HywWqeErcXYtXDGSmDjqVSzwdZj2","resultCount":5}
+[2026-03-04T15:18:06.062Z] [MEMORY] [INFO] [INSIGHTS] Insights generated {"userId":"HywWqeErcXYtXDGSmDjqVSzwdZj2","count":0}
+Insights Generated:
+[]
