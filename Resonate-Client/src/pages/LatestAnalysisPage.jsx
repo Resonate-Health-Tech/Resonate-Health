@@ -166,18 +166,30 @@ export default function LatestAnalysisPage() {
     <div style={{ fontFamily: "'DM Sans', sans-serif", paddingBottom: "40px" }}>
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-[32px] font-bold text-[#1A1A18] leading-tight flex items-center justify-between">
-          Diagnostics
+        <div className="flex items-center justify-between mb-2">
+          <h1 className="text-[32px] font-bold text-[#1A1A18] leading-tight flex items-center gap-3">
+            Diagnostics
+            <button
+              onClick={() => fetchLatest(true)}
+              disabled={refreshing}
+              className="w-10 h-10 rounded-full bg-white/80 backdrop-blur-md border border-black/10 flex items-center justify-center shadow-sm hover:bg-white transition"
+            >
+              <svg width="18" height="18" fill="none" stroke="#1A1A18" strokeWidth="1.7" viewBox="0 0 24 24" style={{ animation: refreshing ? "spin 1s linear infinite" : "none" }}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button>
+          </h1>
           <button
-            onClick={() => fetchLatest(true)}
-            disabled={refreshing}
-            className="w-10 h-10 rounded-full bg-white/80 backdrop-blur-md border border-black/10 flex items-center justify-center shadow-sm hover:bg-white transition"
+            onClick={() => navigate('/biomarkers/history')}
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-[#E5E7EB] hover:bg-gray-50 rounded-full text-sm font-semibold transition"
+            style={{ color: "#1A1A18" }}
           >
-            <svg width="18" height="18" fill="none" stroke="#1A1A18" strokeWidth="1.7" viewBox="0 0 24 24" style={{ animation: refreshing ? "spin 1s linear infinite" : "none" }}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
+            View History
           </button>
-        </h1>
+        </div>
         <p className="text-[#6B7280] text-[15px]">{formatToday()}</p>
       </div>
 

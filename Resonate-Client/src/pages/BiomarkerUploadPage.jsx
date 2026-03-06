@@ -14,6 +14,7 @@ export default function BiomarkerUploadPage() {
   const [error, setError] = useState("");
   const [isDragging, setIsDragging] = useState(false);
   const [analysisComplete, setAnalysisComplete] = useState(false);
+  const [isPending, setIsPending] = useState(false);
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
 
@@ -42,6 +43,7 @@ export default function BiomarkerUploadPage() {
     setFile(selected);
     setBiomarkers([]);
     setAnalysisComplete(false);
+    setIsPending(false);
   };
 
 
@@ -99,26 +101,30 @@ export default function BiomarkerUploadPage() {
       clearInterval(progressInterval);
       setUploadProgress(100);
 
-      const biomarkersData = data.diagnostics.biomarkersByCategory || {};
+      const status = data.diagnostics?.status;
 
-      const biomarkersArr = Object.entries(data.diagnostics.biomarkers || {}).map(
-        ([name, info]) => ({
-          name,
-          value: info?.value,
-          status: info?.status,
-          unit: info?.unit || "",
-          category: info?.category || null,
-          categoryLabel: info?.categoryLabel || null,
-          reason: info?.reason || null,
-          isAvailable: info?.isAvailable !== false,
-        })
-      );
+      if (status === 'pending' || status === 'processing') {
+        setIsPending(true);
+        setAnalysisComplete(true);
+      } else {
+        const biomarkersData = data.diagnostics.biomarkersByCategory || {};
+        const biomarkersArr = Object.entries(data.diagnostics.biomarkers || {}).map(
+          ([name, info]) => ({
+            name,
+            value: info?.value,
+            status: info?.status,
+            unit: info?.unit || "",
+            category: info?.category || null,
+            categoryLabel: info?.categoryLabel || null,
+            reason: info?.reason || null,
+            isAvailable: info?.isAvailable !== false,
+          })
+        );
 
-      setBiomarkers(biomarkersArr);
-      setBiomarkersByCategory(biomarkersData);
-      setAnalysisComplete(true);
-
-      setAnalysisComplete(true);
+        setBiomarkers(biomarkersArr);
+        setBiomarkersByCategory(biomarkersData);
+        setAnalysisComplete(true);
+      }
 
       setTimeout(() => {
         document.getElementById('results-section')?.scrollIntoView({
@@ -144,6 +150,7 @@ export default function BiomarkerUploadPage() {
     setBiomarkersByCategory({});
     setSelectedCategory('blood');
     setAnalysisComplete(false);
+    setIsPending(false);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -376,7 +383,55 @@ export default function BiomarkerUploadPage() {
       </section>
 
 
-      {analysisComplete && biomarkers.length > 0 && (
+      {analysisComplete && isPending && (
+        <section id="results-section" className="px-5 space-y-4">
+          <div className="glass-card rounded-3xl p-6 animate-fadeIn">
+            <div className="flex items-start gap-4 mb-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "rgba(202,219,0,0.15)", border: "1px solid rgba(202,219,0,0.25)" }}>
+                <svg className="w-6 h-6 animate-spin" style={{ color: "#5A6000" }} fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-xl font-black mb-1" style={{ color: "#1A1A18" }}>Report Uploaded!</h3>
+                <p className="text-sm" style={{ color: "rgba(26,26,24,0.55)" }}>
+                  Your report is being safely analyzed by our AI in the background. We will notify you via push notification and WhatsApp when the analysis is complete.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 mt-6">
+              <button
+                onClick={() => navigate('/biomarkers/history')}
+                className="flex items-center justify-center gap-2 px-4 py-3 rounded-2xl font-semibold active:scale-[0.98] transition-all"
+                style={{ background: "rgba(26,26,24,0.06)", color: "rgba(26,26,24,0.70)", border: "2px solid rgba(26,26,24,0.10)" }}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                View History
+              </button>
+              <button
+                onClick={() => {
+                  removeFile();
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="flex items-center justify-center gap-2 px-4 py-3 rounded-2xl font-semibold active:scale-[0.98] transition-all"
+                style={{ background: "rgba(202,219,0,0.12)", color: "#5A6000", border: "2px solid rgba(202,219,0,0.25)" }}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Upload Another
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {analysisComplete && !isPending && biomarkers.length > 0 && (
         <section id="results-section" className="px-5 space-y-4">
 
 
