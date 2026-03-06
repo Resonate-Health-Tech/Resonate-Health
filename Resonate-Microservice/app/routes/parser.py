@@ -17,12 +17,11 @@ router = APIRouter(dependencies=[Depends(verify_internal_secret)])
 
 
 @router.post("/parse-report")
-@limiter.limit("5/minute")
 async def parse_report(request: Request, req: ParseRequest):
     """
     Parse blood report PDF and extract biomarker values.
-
-    - Downloads PDF from URL
+    
+    Includes internal rate limit bypass to allow processing queued reports.
     - Classifies if it's a valid blood report
     - Extracts requested biomarker values
 

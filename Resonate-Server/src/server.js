@@ -5,6 +5,9 @@ import app from "./app.js";
 import { connectDB } from "./config/db.js";
 import { startFitnessSync } from "./cron/fitnessSync.js";
 
+// Initialize BullMQ Workers
+import "./workers/pdfWorker.js";
+
 const PORT = process.env.PORT || 3000;
 
 // Railway sets WEB_CONCURRENCY automatically based on container RAM.
