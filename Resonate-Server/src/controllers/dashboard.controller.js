@@ -44,22 +44,23 @@ export const getDashboardSummary = async (req, res) => {
 
         if (latestDiag?.biomarkers) {
             // Exclude unavailable biomarkers so they don't drag the score down
-            const allMarkers = Object.values(latestDiag.biomarkers).filter(m => m && typeof m === "object");
+            // biomarkers is a Mongoose Map — convert to plain object before iterating
+            const bioObj = latestDiag.biomarkers instanceof Map
+                ? Object.fromEntries(latestDiag.biomarkers)
+                : (latestDiag.biomarkers?.toObject?.() || latestDiag.biomarkers);
+            const allMarkers = Object.values(bioObj).filter(m => m && typeof m === "object");
             const markers = allMarkers.filter(m => m.isAvailable !== false);
             const total = markers.length;
-            const normal = markers.filter(m => m.status === "normal").length;
-            const high = markers.filter(m => m.status === "high").length;
-            const low = markers.filter(m => m.status === "low").length;
-            const critical = markers.filter(m => m.status === "critical").length;
-            const flagged = high + low + critical;
+            const good = markers.filter(m => m.status === "good").length;
+            const bad = markers.filter(m => m.status === "bad").length;
+            const flagged = bad;
 
             diagnosticsMeta = {
-                score: total > 0 ? Math.round((normal / total) * 100) : null,
+                score: total > 0 ? Math.round((good / total) * 100) : null,
                 flaggedCount: flagged,
                 dots: [
-                    ...Array(normal).fill("normal"),
-                    ...Array(high + low).fill("flagged"),
-                    ...Array(critical).fill("critical"),
+                    ...Array(good).fill("normal"),
+                    ...Array(bad).fill("flagged"),
                 ].slice(0, 8),
                 lastUpdated: latestDiag.createdAt,
             };
@@ -164,10 +165,13 @@ export const getDashboardSummary = async (req, res) => {
             trainingBalance = aiAnalysis.trainingBalance;
         } else {
             // Manual fallback
-            const markers = Object.values(latestDiag?.biomarkers || {}).filter(m => m && typeof m === "object" && m.isAvailable !== false);
+            const fallbackBioObj = latestDiag?.biomarkers instanceof Map
+                ? Object.fromEntries(latestDiag.biomarkers)
+                : (latestDiag?.biomarkers?.toObject?.() || latestDiag?.biomarkers || {});
+            const markers = Object.values(fallbackBioObj).filter(m => m && typeof m === "object" && m.isAvailable !== false);
             const total = markers.length;
-            const normal = markers.filter(m => m.status === "normal").length;
-            const bioScore = total > 0 ? Math.round((normal / total) * 100) : null;
+            const good = markers.filter(m => m.status === "good").length;
+            const bioScore = total > 0 ? Math.round((good / total) * 100) : null;
             const sleepHours = fitnessData?.sleepHistory?.slice(-1)[0]?.sleepHours || 0;
             const sleepScore = Math.min(Math.round((sleepHours / 9) * 100), 100);
             healthScore = bioScore !== null ? Math.round(bioScore * 0.7 + sleepScore * 0.3) : null;
