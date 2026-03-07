@@ -179,33 +179,8 @@ export default function BiomarkerUploadPage() {
 
         if (data.status === 'completed') {
           clearInterval(intervalId);
-
-          const biomarkersData = data.biomarkersByCategory || {};
-          const biomarkersArr = Object.entries(data.biomarkers || {}).map(
-            ([name, info]) => ({
-              name,
-              value: info?.value,
-              status: info?.status,
-              unit: info?.unit || "",
-              category: info?.category || null,
-              categoryLabel: info?.categoryLabel || null,
-              reason: info?.reason || null,
-              isAvailable: info?.isAvailable !== false,
-            })
-          );
-
-          setBiomarkers(biomarkersArr);
-          setBiomarkersByCategory(biomarkersData);
-          setIsPending(false);
-          setPendingRecordId(null);
-          // analysisComplete stays true — the results section will now render
-
-          setTimeout(() => {
-            document.getElementById('results-section')?.scrollIntoView({
-              behavior: 'smooth',
-              block: 'start'
-            });
-          }, 300);
+          // Navigate to the full diagnostics page to show results
+          navigate('/diagnostics');
         } else if (data.status === 'failed') {
           clearInterval(intervalId);
           setIsPending(false);

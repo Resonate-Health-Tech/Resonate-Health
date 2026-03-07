@@ -9,6 +9,7 @@ import sendReportReady from '../services/notification.js';
 import { DiagnosticsIngestor } from '../services/ingestors/diagnostics.ingestor.js';
 import { MemoryService } from '../services/memory.service.js';
 import { insightsCacheService } from '../services/insights/insights.cache.service.js';
+import { dashboardAIService } from '../services/dashboard.ai.service.js';
 import logger from '../utils/logger.js';
 import dotenv from 'dotenv';
 import { redisClient } from '../config/redis.js';
@@ -121,6 +122,13 @@ const processPdfJob = async (job) => {
         insightsCacheService.invalidateCache(userId).catch(err =>
             logger.error('invalidateInsightsCache', 'Failed to invalidate insight cache', err)
         );
+
+        // Invalidate dashboard AI cache so new biomarkers are reflected in the health score
+        if (user?._id) {
+            dashboardAIService.invalidateCache(user._id).catch(err =>
+                logger.error('invalidateDashboardCache', 'Failed to invalidate dashboard AI cache', err)
+            );
+        }
 
         logger.info(`Successfully finished processing PDF for record ${recordId}`);
         return { success: true, recordId };
