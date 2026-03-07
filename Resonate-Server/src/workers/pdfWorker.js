@@ -29,8 +29,13 @@ const processPdfJob = async (job) => {
         const user = await User.findOne({ firebaseUid: userId });
         const userGender = user?.gender || null;
 
+        const microserviceUrl = process.env.MICROSERVICE_URL;
+        if (!microserviceUrl) {
+            throw new Error('MICROSERVICE_URL environment variable is not set. Cannot process PDF.');
+        }
+
         const parsingResponse = await axios.post(
-            `${process.env.MICROSERVICE_URL}/parse-report`,
+            `${microserviceUrl}/parse-report`,
             {
                 pdfUrl,
                 biomarkers: BIOMARKERS_LIST
