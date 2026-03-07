@@ -73,8 +73,12 @@ export const uploadDiagnostics = async (req, res) => {
           logger.info(`Queued PDF parsing job for record ${record._id}`);
 
           // Invalidate diagnostics history cache instantly so UI marks it as pending
-          await redisClient.del(diagCacheKey(userId, null));
-          await redisClient.del(diagCacheKey(userId, record.category));
+          try {
+            await redisClient.del(diagCacheKey(userId, null));
+            await redisClient.del(diagCacheKey(userId, record.category));
+          } catch (redisErr) {
+            logger.warn(`Redis unavailable, skipping cache invalidation: ${redisErr.message}`);
+          }
 
           return res.status(202).json({
             message: "Report uploaded and is being processed in the background",
@@ -126,9 +130,14 @@ export const getDiagnosticsHistory = async (req, res) => {
     const userId = req.user.firebaseUid;
     const { category } = req.query;
 
-    // Check Redis cache first
+    // Check Redis cache first (fail-safe: skip cache if Redis is unavailable)
     const cacheKey = diagCacheKey(userId, category);
-    const cachedStr = await redisClient.get(cacheKey);
+    let cachedStr = null;
+    try {
+      cachedStr = await redisClient.get(cacheKey);
+    } catch (redisErr) {
+      logger.warn(`Redis unavailable, skipping cache read: ${redisErr.message}`);
+    }
 
     if (cachedStr) {
       logger.info(`diagCache HIT (Redis) for user ${userId}`);
@@ -146,8 +155,12 @@ export const getDiagnosticsHistory = async (req, res) => {
 
     const plainHistory = JSON.parse(JSON.stringify(history));
 
-    // Set in Redis with 30s TTL
-    await redisClient.setex(cacheKey, 30, JSON.stringify(plainHistory));
+    // Set in Redis with 30s TTL (fail-safe: skip cache write if Redis is unavailable)
+    try {
+      await redisClient.setex(cacheKey, 30, JSON.stringify(plainHistory));
+    } catch (redisErr) {
+      logger.warn(`Redis unavailable, skipping cache write: ${redisErr.message}`);
+    }
 
     return res.json(plainHistory);
   } catch (error) {

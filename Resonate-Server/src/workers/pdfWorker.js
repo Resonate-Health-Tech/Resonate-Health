@@ -105,8 +105,12 @@ const processPdfJob = async (job) => {
         }
 
         // Clear Redis cache (invalidate cached history)
-        await redisClient.del(diagCacheKey(userId, null));
-        await redisClient.del(diagCacheKey(userId, record.category));
+        try {
+            await redisClient.del(diagCacheKey(userId, null));
+            await redisClient.del(diagCacheKey(userId, record.category));
+        } catch (redisErr) {
+            logger.warn(`Redis unavailable, skipping cache invalidation in worker: ${redisErr.message}`);
+        }
 
         // Invalidate insights cache
         insightsCacheService.invalidateCache(userId).catch(err =>
