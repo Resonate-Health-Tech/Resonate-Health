@@ -33,6 +33,10 @@ dotenv.config();
 
 const app = express();
 
+// Trust Railway's reverse proxy so X-Forwarded-For is read correctly.
+// Without this, express-rate-limit throws ERR_ERL_UNEXPECTED_X_FORWARDED_FOR and crashes the server.
+app.set('trust proxy', 1);
+
 // Security headers (must be first)
 app.use(helmet({
   contentSecurityPolicy: {
