@@ -9,6 +9,7 @@ const createRedisClient = (instanceName) => {
     const client = new Redis(REDIS_URL, {
         maxRetriesPerRequest: null,
         enableReadyCheck: false,
+        family: 0,
         retryStrategy(times) {
             const delay = Math.min(times * 50, 2000);
             return delay;
