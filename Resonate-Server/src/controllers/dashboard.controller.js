@@ -43,7 +43,9 @@ export const getDashboardSummary = async (req, res) => {
         let diagnosticsMeta = { score: null, flaggedCount: 0, dots: [], lastUpdated: null };
 
         if (latestDiag?.biomarkers) {
-            const markers = Object.values(latestDiag.biomarkers).filter(m => m && typeof m === "object");
+            // Exclude unavailable biomarkers so they don't drag the score down
+            const allMarkers = Object.values(latestDiag.biomarkers).filter(m => m && typeof m === "object");
+            const markers = allMarkers.filter(m => m.isAvailable !== false);
             const total = markers.length;
             const normal = markers.filter(m => m.status === "normal").length;
             const high = markers.filter(m => m.status === "high").length;
@@ -162,7 +164,7 @@ export const getDashboardSummary = async (req, res) => {
             trainingBalance = aiAnalysis.trainingBalance;
         } else {
             // Manual fallback
-            const markers = Object.values(latestDiag?.biomarkers || {}).filter(m => m && typeof m === "object");
+            const markers = Object.values(latestDiag?.biomarkers || {}).filter(m => m && typeof m === "object" && m.isAvailable !== false);
             const total = markers.length;
             const normal = markers.filter(m => m.status === "normal").length;
             const bioScore = total > 0 ? Math.round((normal / total) * 100) : null;

@@ -240,3 +240,29 @@ export const fetchDiagnosticsFromAPI = async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 }
+
+
+export const getDiagnosticsStatus = async (req, res) => {
+  try {
+    const userId = req.user.firebaseUid;
+    const { id } = req.params;
+
+    const record = await Diagnostics.findOne({ _id: id, userId })
+      .select("status biomarkers biomarkersByCategory createdAt updatedAt");
+
+    if (!record) {
+      return res.status(404).json({ error: "Record not found" });
+    }
+
+    return res.json({
+      status: record.status,
+      biomarkers: record.biomarkers,
+      biomarkersByCategory: record.biomarkersByCategory,
+      createdAt: record.createdAt,
+      updatedAt: record.updatedAt,
+    });
+  } catch (error) {
+    console.error("getDiagnosticsStatus error:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};

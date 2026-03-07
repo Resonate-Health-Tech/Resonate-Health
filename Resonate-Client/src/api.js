@@ -85,6 +85,10 @@ export function uploadPdfWithCookie(path, file, category) {
   }));
 }
 
+export function getDiagnosticStatus(recordId) {
+  return getWithCookie(`/api/diagnostics/status/${recordId}`);
+}
+
 export function analyzeFoodImage(file, cuisine) {
   const formData = new FormData();
   formData.append("image", file);

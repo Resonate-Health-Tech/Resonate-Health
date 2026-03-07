@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { uploadPdfWithCookie } from "../api";
+import { uploadPdfWithCookie, getDiagnosticStatus } from "../api";
 import { auth } from "../firebase";
 import BiomarkerRing from "../components/BiomarkerRing";
 import { useNavigate } from "react-router-dom";
@@ -15,6 +15,7 @@ export default function BiomarkerUploadPage() {
   const [isDragging, setIsDragging] = useState(false);
   const [analysisComplete, setAnalysisComplete] = useState(false);
   const [isPending, setIsPending] = useState(false);
+  const [pendingRecordId, setPendingRecordId] = useState(null);
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
 
@@ -105,6 +106,7 @@ export default function BiomarkerUploadPage() {
 
       if (status === 'pending' || status === 'processing') {
         setIsPending(true);
+        setPendingRecordId(data.diagnostics?._id);
         setAnalysisComplete(true);
       } else {
         const biomarkersData = data.diagnostics.biomarkersByCategory || {};
@@ -151,10 +153,75 @@ export default function BiomarkerUploadPage() {
     setSelectedCategory('blood');
     setAnalysisComplete(false);
     setIsPending(false);
+    setPendingRecordId(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
   };
+
+  // Poll for completion when a report is pending
+  useEffect(() => {
+    if (!isPending || !pendingRecordId) return;
+
+    let attempts = 0;
+    const maxAttempts = 60; // ~4 minutes at 4s intervals
+
+    const intervalId = setInterval(async () => {
+      attempts++;
+      if (attempts > maxAttempts) {
+        clearInterval(intervalId);
+        setError("Processing is taking longer than expected. Check View History later.");
+        return;
+      }
+
+      try {
+        const data = await getDiagnosticStatus(pendingRecordId);
+
+        if (data.status === 'completed') {
+          clearInterval(intervalId);
+
+          const biomarkersData = data.biomarkersByCategory || {};
+          const biomarkersArr = Object.entries(data.biomarkers || {}).map(
+            ([name, info]) => ({
+              name,
+              value: info?.value,
+              status: info?.status,
+              unit: info?.unit || "",
+              category: info?.category || null,
+              categoryLabel: info?.categoryLabel || null,
+              reason: info?.reason || null,
+              isAvailable: info?.isAvailable !== false,
+            })
+          );
+
+          setBiomarkers(biomarkersArr);
+          setBiomarkersByCategory(biomarkersData);
+          setIsPending(false);
+          setPendingRecordId(null);
+          // analysisComplete stays true — the results section will now render
+
+          setTimeout(() => {
+            document.getElementById('results-section')?.scrollIntoView({
+              behavior: 'smooth',
+              block: 'start'
+            });
+          }, 300);
+        } else if (data.status === 'failed') {
+          clearInterval(intervalId);
+          setIsPending(false);
+          setPendingRecordId(null);
+          setAnalysisComplete(false);
+          setError("Report analysis failed. Please try uploading again.");
+        }
+        // If still pending/processing, keep polling
+      } catch (err) {
+        // Silently retry on network errors
+        console.warn('Status poll error:', err.message);
+      }
+    }, 4000);
+
+    return () => clearInterval(intervalId);
+  }, [isPending, pendingRecordId]);
 
 
   useEffect(() => {
